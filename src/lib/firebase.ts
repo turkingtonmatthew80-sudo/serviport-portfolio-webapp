@@ -2,20 +2,11 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDKiPUS-7IBkYxgygW5kwZG5b3H0BP2LXA",
-  authDomain: "serviport-24f31.firebaseapp.com",
-  projectId: "serviport-24f31",
-  storageBucket: "serviport-24f31.firebasestorage.app",
-  messagingSenderId: "20443440053",
-  appId: "1:20443440053:web:34b301392ede5602a02ffc",
-  measurementId: "G-7ZD8063D0D"
-};
+import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
-export const db = getFirestore(app);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); // CRITICAL
 export const auth = getAuth(app);
 
 export enum OperationType {

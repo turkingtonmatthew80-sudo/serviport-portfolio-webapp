@@ -47,13 +47,20 @@ export function ContactPage() {
     
     try {
       // 1. Guardar en Firestore
-      await addDoc(collection(db, "consultas"), {
+      const docPromise = addDoc(collection(db, "consultas"), {
         ...formData,
         createdAt: new Date().toISOString()
       });
+      
+      // Agregar timeout para evitar que se quede pegado si firebase falla
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout conectando a la base de datos")), 8000)
+      );
+      
+      await Promise.race([docPromise, timeoutPromise]);
 
       // 2. Enviar email vía formsubmit.co
-      await fetch("https://formsubmit.co/ajax/turkingtonmatthew80@gmail.com", {
+      const response = await fetch("https://formsubmit.co/ajax/turkingtonmatthew80@gmail.com", {
         method: "POST",
         headers: { 
             'Content-Type': 'application/json',
@@ -68,6 +75,10 @@ export function ContactPage() {
             Mensaje: formData.mensaje
         })
       });
+
+      if (!response.ok) {
+        throw new Error("Error en el servicio de envío de correos.");
+      }
 
       setSubmitStatus({ type: 'success', message: 'Mensaje enviado con éxito. Nuestro equipo te contactará en breve.' });
       setFormData({

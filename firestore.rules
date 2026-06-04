@@ -38,5 +38,9 @@ service cloud.firestore {
                     && isValidUser(incoming())
                     && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'razonSocial', 'rif', 'roles']);
     }
+
+    match /consultas/{consultaId} {
+      allow create: if true;
+    }
   }
 }
