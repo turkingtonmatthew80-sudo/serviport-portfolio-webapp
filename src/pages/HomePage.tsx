@@ -4,6 +4,7 @@ import { ServicesSection } from '../components/ServicesSection';
 import { PortalPreviewSection } from '../components/PortalPreviewSection';
 import { LocationsPartnersSection } from '../components/LocationsPartnersSection';
 import { NewsSection } from '../components/NewsSection';
+import { FAQSection } from '../components/FAQSection';
 
 export function HomePage() {
   return (
@@ -14,6 +15,7 @@ export function HomePage() {
       <PortalPreviewSection />
       <NewsSection />
       <LocationsPartnersSection />
+      <FAQSection />
     </>
   );
 }

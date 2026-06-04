@@ -1,7 +1,9 @@
-import { ArrowRight, Mail, MapPin, Phone, Building2, Send, Clock, User, Briefcase } from "lucide-react";
+import { ArrowRight, Mail, MapPin, Phone, Building2, Send, Clock, User, Briefcase, Copy, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { motion } from "motion/react";
+import { db } from "../lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -13,20 +15,76 @@ export function ContactPage() {
     mensaje: "",
     privacidad: false
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error' | null, message: string }>({ type: null, message: '' });
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedText(text);
+      setTimeout(() => setCopiedText(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
+
+  const CopyButton = ({ text }: { text: string }) => (
+    <button 
+      onClick={() => handleCopy(text)}
+      className="ml-2 p-1.5 text-gray-400 hover:text-[#00A9CE] bg-slate-50 hover:bg-slate-100 rounded transition-colors"
+      title="Copiar al portapapeles"
+    >
+      {copiedText === text ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+    </button>
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate submission
-    alert("Mensaje enviado con éxito. Nuestro equipo te contactará en breve.");
-    setFormData({
-      nombre: "",
-      apellidos: "",
-      empresa: "",
-      email: "",
-      tipo: "Cotización",
-      mensaje: "",
-      privacidad: false
-    });
+    setIsSubmitting(true);
+    setSubmitStatus({ type: null, message: '' });
+    
+    try {
+      // 1. Guardar en Firestore
+      await addDoc(collection(db, "consultas"), {
+        ...formData,
+        createdAt: new Date().toISOString()
+      });
+
+      // 2. Enviar email vía formsubmit.co
+      await fetch("https://formsubmit.co/ajax/turkingtonmatthew80@gmail.com", {
+        method: "POST",
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            _subject: `Nueva Consulta de Serviport: ${formData.tipo}`,
+            Nombre: `${formData.nombre} ${formData.apellidos}`,
+            Empresa: formData.empresa || "No especificada",
+            Email: formData.email,
+            Tipo: formData.tipo,
+            Mensaje: formData.mensaje
+        })
+      });
+
+      setSubmitStatus({ type: 'success', message: 'Mensaje enviado con éxito. Nuestro equipo te contactará en breve.' });
+      setFormData({
+        nombre: "",
+        apellidos: "",
+        empresa: "",
+        email: "",
+        tipo: "Cotización",
+        mensaje: "",
+        privacidad: false
+      });
+    } catch (error) {
+      console.error(error);
+      setSubmitStatus({ type: 'error', message: 'Hubo un error al enviar el mensaje. Intenta nuevamente.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -118,15 +176,24 @@ export function ContactPage() {
               <div className="bg-white p-6 border border-gray-100 shadow-sm rounded-sm space-y-4">
                 <div>
                   <h4 className="text-sm font-bold text-[#0b1a2e] mb-1">Gerencia Comercial</h4>
-                  <a href="mailto:Gerenciacomercial@serviportve.com" className="text-gray-600 hover:text-[#F7941D] font-medium break-all transition-colors">Gerenciacomercial@serviportve.com</a>
+                  <div className="flex items-center">
+                    <a href="mailto:Gerenciacomercial@serviportve.com" className="text-gray-600 hover:text-[#F7941D] font-medium break-all transition-colors">Gerenciacomercial@serviportve.com</a>
+                    <CopyButton text="Gerenciacomercial@serviportve.com" />
+                  </div>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-[#0b1a2e] mb-1">Administración</h4>
-                  <a href="mailto:administracion@serviport.ve" className="text-gray-600 hover:text-[#F7941D] font-medium break-all transition-colors">administracion@serviport.ve</a>
+                  <div className="flex items-center">
+                    <a href="mailto:administracion@serviport.ve" className="text-gray-600 hover:text-[#F7941D] font-medium break-all transition-colors">administracion@serviport.ve</a>
+                    <CopyButton text="administracion@serviport.ve" />
+                  </div>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-[#0b1a2e] mb-1">Contacto General</h4>
-                  <a href="mailto:serviportagentesnavieros@gmail.com" className="text-gray-600 hover:text-[#F7941D] font-medium break-all transition-colors">serviportagentesnavieros@gmail.com</a>
+                  <div className="flex items-center">
+                    <a href="mailto:serviportagentesnavieros@gmail.com" className="text-gray-600 hover:text-[#F7941D] font-medium break-all transition-colors">serviportagentesnavieros@gmail.com</a>
+                    <CopyButton text="serviportagentesnavieros@gmail.com" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -141,15 +208,24 @@ export function ContactPage() {
               <div className="bg-white p-6 border border-gray-100 shadow-sm rounded-sm flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-[#0b1a2e] text-sm">Central (Oficina L-V)</span>
-                  <a href="tel:+582123383957" className="text-gray-600 hover:text-[#00A9CE] font-bold">(+58) 212 3383957</a>
+                  <div className="flex items-center">
+                    <a href="tel:+582123383957" className="text-gray-600 hover:text-[#00A9CE] font-bold">+58 212 3383957</a>
+                    <CopyButton text="+582123383957" />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-[#0b1a2e] text-sm">Celular Comercial / Admin</span>
-                  <a href="tel:+584129361462" className="text-gray-600 hover:text-[#00A9CE] font-bold">+58 412 9361462</a>
+                  <div className="flex items-center">
+                    <a href="tel:+584129361462" className="text-gray-600 hover:text-[#00A9CE] font-bold">+58 412 9361462</a>
+                    <CopyButton text="+584129361462" />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-[#0b1a2e] text-sm">Operaciones (Terminal)</span>
-                  <a href="tel:+584242963458" className="text-gray-600 hover:text-[#00A9CE] font-bold">+58 424 2963458</a>
+                  <div className="flex items-center">
+                    <a href="tel:+584242963458" className="text-gray-600 hover:text-[#00A9CE] font-bold">+58 424 2963458</a>
+                    <CopyButton text="+584242963458" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -277,10 +353,17 @@ export function ContactPage() {
 
                 <button 
                   type="submit"
-                  className="w-full md:w-auto bg-[#00A9CE] text-white font-bold py-4 px-10 rounded-sm hover:bg-[#008EBF] transition-colors uppercase tracking-wider text-sm flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-full md:w-auto bg-[#00A9CE] text-white font-bold py-4 px-10 rounded-sm hover:bg-[#008EBF] transition-colors uppercase tracking-wider text-sm flex items-center justify-center gap-2 disabled:bg-opacity-70 disabled:cursor-not-allowed"
                 >
-                  <Send size={18} /> ENVIAR MENSAJE
+                  {isSubmitting ? 'ENVIANDO...' : <><Send size={18} /> ENVIAR MENSAJE</>}
                 </button>
+
+                {submitStatus.type && (
+                  <div className={`p-4 rounded-sm text-sm font-bold mt-4 ${submitStatus.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {submitStatus.message}
+                  </div>
+                )}
 
               </form>
             </div>
