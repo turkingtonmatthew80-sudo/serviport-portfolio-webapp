@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { X, ChevronRight } from "lucide-react";
+import { X, ChevronRight, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 const megaMenuData = {
@@ -87,6 +87,7 @@ export function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
   const handleMouseEnter = (menu: MenuKey) => {
@@ -102,20 +103,29 @@ export function Navigation() {
 
   const handleMenuClick = () => {
     setActiveMenu(null);
+    setMobileMenuOpen(false);
   };
 
   useEffect(() => {
     setActiveMenu(null);
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   return (
-    <nav className="w-full bg-[#0b1a2e] md:bg-white text-white md:text-gray-700 h-20 flex justify-between items-center z-50 relative border-b border-gray-100/10 md:border-gray-100" onMouseLeave={handleMouseLeave}>
-      <div className="flex h-full items-center px-6">
-        <Link tracking-tight="true" to="/" className="h-full flex items-center py-2 relative z-10 filter brightness-0 invert md:filter-none">
+    <nav className="w-full bg-white text-gray-700 h-20 flex justify-between items-center z-50 relative border-b border-gray-100" onMouseLeave={handleMouseLeave}>
+      <div className="flex h-full items-center px-4 md:px-6">
+        <button 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden mr-4 text-gray-700 p-1"
+          aria-label="Toggle mobile menu"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+        <Link tracking-tight="true" to="/" className="h-full flex items-center py-2 md:py-4 relative z-10">
           <img 
             src="/logo.png" 
             alt="Serviport Logo" 
-            className="h-full w-auto object-contain" 
+            className="h-10 md:h-full w-auto object-contain" 
           />
         </Link>
       </div>
@@ -141,13 +151,51 @@ export function Navigation() {
         ))}
       </div>
       
-      <div className="px-6 flex items-center h-full">
-        <button onClick={() => navigate('/login')} className="bg-[#00A9CE] md:bg-[#0b1a2e] text-white px-6 py-2.5 rounded font-bold hover:bg-[#008EBF] md:hover:bg-slate-800 transition-colors shadow-sm text-sm whitespace-nowrap">
+      <div className="px-4 md:px-6 flex items-center h-full">
+        <button onClick={() => navigate('/login')} className="bg-[#00A9CE] md:bg-[#0b1a2e] text-white px-4 md:px-6 py-2 md:py-2.5 rounded font-bold hover:bg-[#008EBF] md:hover:bg-slate-800 transition-colors shadow-sm text-xs md:text-sm whitespace-nowrap">
           PORTAL B2B
         </button>
       </div>
 
-      {/* Mega Menu Overlay */}
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="absolute top-20 left-0 w-full bg-[#0b1a2e] border-t border-white/10 shadow-2xl overflow-y-auto md:hidden"
+            style={{ maxHeight: 'calc(100vh - 80px)' }}
+          >
+            <div className="flex flex-col py-4">
+              {(Object.keys(megaMenuData) as MenuKey[]).map((key) => (
+                <div key={key} className="border-b border-white/10 last:border-0">
+                  <div className="px-6 py-4 font-bold text-white text-lg flex items-center justify-between">
+                    <Link to={megaMenuData[key].path} onClick={handleMenuClick} className="flex-1">
+                      {key.toUpperCase()}
+                    </Link>
+                  </div>
+                  <div className="px-8 pb-4 flex flex-col gap-3">
+                    {megaMenuData[key].links.map((link, idx) => (
+                      <Link 
+                        key={idx} 
+                        to={link.path}
+                        onClick={handleMenuClick}
+                        className="text-slate-300 hover:text-white transition-colors py-1 flex items-center gap-2 text-sm"
+                      >
+                        <ChevronRight size={14} className="text-[#F7941D]" />
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mega Menu Overlay (Desktop) */}
       <AnimatePresence>
         {activeMenu && (
           <motion.div 
@@ -155,13 +203,13 @@ export function Navigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-20 left-0 w-full bg-[#0b1a2e] border-t border-white/10 shadow-2xl overflow-hidden"
+            className="hidden md:block absolute top-20 left-0 w-full bg-[#0b1a2e] border-t border-white/10 shadow-2xl overflow-hidden"
             onMouseEnter={() => {
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
             }}
             onMouseLeave={handleMouseLeave}
           >
-            <div className="max-w-[1400px] mx-auto p-12 lg:p-16 flex flex-col lg:flex-row gap-16 relative">
+            <div className="max-w-[1400px] mx-auto p-12 lg:p-16 flex flex-col md:flex-row gap-12 lg:gap-16 relative">
               <button 
                 onClick={() => setActiveMenu(null)}
                 className="absolute top-8 right-8 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-bold uppercase transition-colors"
@@ -169,13 +217,13 @@ export function Navigation() {
                 Close <X size={20} />
               </button>
               
-              <div className="lg:w-1/3">
+              <div className="md:w-1/3">
                 <div className="flex items-center gap-3 mb-10">
                   <div className="w-4 h-1 bg-[#F7941D]"></div>
                   <Link 
                     to={megaMenuData[activeMenu].path} 
                     onClick={handleMenuClick}
-                    className="text-4xl font-bold text-white hover:text-[#00A9CE] transition-colors border-b-2 border-white/20 pb-1"
+                    className="text-3xl lg:text-4xl font-bold text-white hover:text-[#00A9CE] transition-colors border-b-2 border-white/20 pb-1"
                   >
                     {megaMenuData[activeMenu].title}
                   </Link>
@@ -195,8 +243,8 @@ export function Navigation() {
                 </div>
               </div>
 
-              <div className="lg:w-2/3 flex flex-col md:flex-row gap-8">
-                <div className="md:w-3/5 h-64 md:h-auto rounded overflow-hidden">
+              <div className="md:w-2/3 flex flex-col md:flex-row gap-8">
+                <div className="md:w-3/5 h-48 md:h-auto rounded overflow-hidden">
                   <img 
                     src={megaMenuData[activeMenu].image} 
                     alt={megaMenuData[activeMenu].title} 
@@ -206,9 +254,9 @@ export function Navigation() {
                 <div className="md:w-2/5 flex flex-col justify-center">
                   <div className="flex items-center gap-3 mb-4">
                      <div className="w-3 h-1 bg-[#F7941D]"></div>
-                     <span className="text-2xl font-bold text-white">{megaMenuData[activeMenu].title}</span>
+                     <span className="text-xl lg:text-2xl font-bold text-white">{megaMenuData[activeMenu].title}</span>
                   </div>
-                  <p className="text-slate-400 text-lg leading-relaxed">
+                  <p className="text-slate-400 text-base lg:text-lg leading-relaxed">
                     {megaMenuData[activeMenu].description}
                   </p>
                 </div>
@@ -221,3 +269,4 @@ export function Navigation() {
     </nav>
   );
 }
+
