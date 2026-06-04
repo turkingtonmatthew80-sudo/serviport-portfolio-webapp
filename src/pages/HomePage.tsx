@@ -1,0 +1,19 @@
+import { HeroSection } from '../components/HeroSection';
+import { AboutSection } from '../components/AboutSection';
+import { ServicesSection } from '../components/ServicesSection';
+import { PortalPreviewSection } from '../components/PortalPreviewSection';
+import { LocationsPartnersSection } from '../components/LocationsPartnersSection';
+import { NewsSection } from '../components/NewsSection';
+
+export function HomePage() {
+  return (
+    <>
+      <HeroSection />
+      <AboutSection />
+      <ServicesSection />
+      <PortalPreviewSection />
+      <NewsSection />
+      <LocationsPartnersSection />
+    </>
+  );
+}

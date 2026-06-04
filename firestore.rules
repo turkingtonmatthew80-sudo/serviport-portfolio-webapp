@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'razonSocial', 'rif', 'roles']) && data.keys().size() == 4
+        && data.email is string && data.email.size() <= 200
+        && data.razonSocial is string && data.razonSocial.size() <= 200
+        && data.rif is string && data.rif.size() <= 50
+        && data.roles is list && data.roles.size() <= 10 && (data.roles.size() == 0 || data.roles[0] is string);
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+                    && isValidUser(incoming());
+      
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+                    && isValidUser(incoming())
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'razonSocial', 'rif', 'roles']);
+    }
+  }
+}
