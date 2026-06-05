@@ -13,8 +13,8 @@ export function HomePage() {
       <AboutSection />
       <ServicesSection />
       <PortalPreviewSection />
-      <NewsSection />
       <LocationsPartnersSection />
+      <NewsSection />
       <FAQSection />
     </>
   );

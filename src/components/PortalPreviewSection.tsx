@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 export function PortalPreviewSection() {
   return (
-    <section className="min-h-[100dvh] flex flex-col justify-center py-24 px-6 bg-gray-50/50 border-b border-gray-200">
+    <section className="min-h-[100dvh] flex flex-col justify-center py-16 md:py-24 px-4 md:px-6 bg-gray-50/50 border-b border-gray-200">
       <motion.div 
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}

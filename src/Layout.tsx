@@ -16,7 +16,7 @@ export function Layout() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 font-sans text-slate-900 selection:bg-[#F7941D] selection:text-white">
+    <div className="flex flex-col min-h-[100dvh] bg-gray-50 font-sans text-slate-900 selection:bg-[#F7941D] selection:text-white">
       <Navigation />
       
       {location.pathname !== '/' && (

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export function VacanciesPage() {
   return (
-    <div className="w-full bg-slate-50 min-h-[calc(100vh-10rem)] flex items-center justify-center p-6">
+    <div className="w-full bg-slate-50 min-h-[calc(100dvh-10rem)] flex items-center justify-center p-6">
       <div className="max-w-3xl w-full bg-white shadow-xl shadow-slate-200/50 rounded-sm border border-gray-100 overflow-hidden text-center flex flex-col">
         <div className="bg-[#0b1a2e] py-16 px-8 relative overflow-hidden flex flex-col items-center">
            <div className="absolute inset-0 opacity-10 flex items-center justify-center">

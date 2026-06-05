@@ -23,7 +23,7 @@ export function PortalLayout() {
   }, [user, isLoading, navigate]);
 
   if (isLoading || !user) {
-    return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+    return <div className="min-h-[100dvh] flex items-center justify-center">Cargando...</div>;
   }
 
   const handleLogout = (e: React.MouseEvent) => {
@@ -165,7 +165,7 @@ export function PortalLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-[100dvh] bg-slate-50 flex">
       {/* Mobile Sidebar Overlay */}
       {isMobileSidebarOpen && (
         <div 

@@ -99,7 +99,7 @@ export function ContactPage() {
   };
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen">
+    <div className="w-full bg-slate-50 min-h-[100dvh]">
       {/* HERO SECTION */}
       <section className="bg-[#0b1a2e] pt-32 pb-24 px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">

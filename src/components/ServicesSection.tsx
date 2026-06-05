@@ -70,7 +70,7 @@ export function ServicesSection() {
 
   return (
     <section ref={containerRef} className="relative h-[300vh] bg-[#0b1a2e]">
-      <div className="sticky top-0 h-screen flex flex-col justify-center py-10 px-6 overflow-hidden">
+      <div className="sticky top-0 h-[100dvh] flex flex-col justify-center py-10 px-6 overflow-hidden">
         {/* Background Graphic */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#00A9CE]/5 blur-[120px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/4" />
         
@@ -88,26 +88,26 @@ export function ServicesSection() {
                 <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
                   Soluciones Integrales
                 </div>
-                <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-white mb-6 leading-[1.15]">
+                <h2 className="text-2xl md:text-4xl lg:text-[2.75rem] font-extrabold text-white mb-3 md:mb-6 leading-[1.15]">
                   Nuestros Servicios
                 </h2>
-                <p className="text-gray-300 text-lg leading-relaxed mb-6 pb-6 border-b border-white/10">
+                <p className="text-gray-300 text-sm md:text-lg leading-relaxed mb-4 md:mb-6 pb-4 md:pb-6 border-b border-white/10">
                   Serviport es tu socio logístico ideal en Venezuela. Nuestro equipo de expertos brinda operaciones integrales desde la atención en muelle y estiba, hasta la administración del Almacén General de Depósito.
                 </p>
               </motion.div>
 
-              <div className="space-y-1">
+              <div className="space-y-0.5 md:space-y-1">
                 {services.map((service, idx) => (
                   <Link 
                     to={service.path}
                     key={idx} 
-                    className={`flex flex-col py-2 px-3 transition-all duration-300 cursor-pointer group rounded-lg ${
+                    className={`flex flex-col py-1.5 md:py-2 px-2 md:px-3 transition-all duration-300 cursor-pointer group rounded-lg ${
                       activeIndex === idx ? "bg-white/10 shadow-md border-l-4 border-[#00A9CE]" : "hover:bg-white/5 border-l-4 border-transparent"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <ArrowRight size={18} strokeWidth={2.5} className={`transition-all duration-300 ${activeIndex === idx ? "text-[#00A9CE] translate-x-1.5" : "text-slate-500 group-hover:text-slate-400"}`} />
-                      <span className={`text-base md:text-lg font-bold transition-colors ${activeIndex === idx ? "text-white" : "text-slate-300 group-hover:text-white"}`}>
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <ArrowRight size={16} strokeWidth={2.5} className={`transition-all duration-300 md:w-[18px] md:h-[18px] ${activeIndex === idx ? "text-[#00A9CE] translate-x-1.5" : "text-slate-500 group-hover:text-slate-400"}`} />
+                      <span className={`text-sm md:text-lg font-bold transition-colors ${activeIndex === idx ? "text-white" : "text-slate-300 group-hover:text-white"}`}>
                         {service.title}
                       </span>
                     </div>
@@ -121,7 +121,7 @@ export function ServicesSection() {
                           exit={{ opacity: 0, height: 0, marginTop: 0 }}
                           className="overflow-hidden"
                         >
-                          <p className="text-slate-400 text-sm leading-relaxed pl-[30px] font-medium pr-4">
+                          <p className="text-slate-400 text-xs md:text-sm leading-snug md:leading-relaxed pl-[28px] md:pl-[30px] font-medium pr-2 md:pr-4">
                             {service.description}
                           </p>
                         </motion.div>
@@ -137,15 +137,15 @@ export function ServicesSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <Link to="/servicios" className="group border-2 border-[#F7941D] text-[#F7941D] hover:text-white hover:bg-[#F7941D] px-8 md:px-10 py-4 rounded font-bold transition-colors flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit mt-6">
+                <Link to="/servicios" className="group border-2 border-[#F7941D] text-[#F7941D] hover:text-white hover:bg-[#F7941D] px-6 md:px-10 py-2.5 md:py-4 rounded font-bold transition-colors flex items-center justify-center gap-2 md:gap-3 text-center text-xs md:text-base uppercase tracking-wider w-fit mt-4 md:mt-6">
                   TODOS NUESTROS SERVICIOS
-                  <motion.span className="inline-block transition-transform group-hover:translate-x-1"><ArrowRight size={20} strokeWidth={2.5} /></motion.span>
+                  <motion.span className="inline-block transition-transform group-hover:translate-x-1"><ArrowRight className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} /></motion.span>
                 </Link>
               </motion.div>
             </div>
 
             {/* Dynamic Image Display */}
-            <div className="lg:w-5/12 w-full mt-8 lg:mt-0 lg:h-auto h-[40vh] min-h-[350px]">
+            <div className="lg:w-5/12 w-full mt-4 md:mt-8 lg:mt-0 lg:h-auto h-[30vh] md:h-[40vh] min-h-[200px] md:min-h-[350px]">
               <div className="w-full h-full relative overflow-hidden rounded-xl shadow-2xl border border-white/10 group cursor-pointer transition-colors duration-500 hover:border-[#00A9CE]/50">
                 <AnimatePresence mode="wait">
                   <motion.img

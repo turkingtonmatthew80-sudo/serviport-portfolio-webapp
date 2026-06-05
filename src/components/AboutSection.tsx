@@ -186,7 +186,7 @@ export function AboutSection() {
   }, [containers.length]);
 
   return (
-    <section className="min-h-[100dvh] flex flex-col justify-center py-24 px-6 gap-y-12 bg-gray-50/50">
+    <section className="min-h-[100dvh] flex flex-col justify-center py-16 md:py-24 px-4 md:px-6 gap-y-12 bg-gray-50/50">
       <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center">
         <div className="flex flex-col lg:flex-row justify-between gap-16 lg:gap-24 mb-16 items-center flex-1">
           {/* Left Content */}

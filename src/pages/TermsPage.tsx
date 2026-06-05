@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export function TermsPage() {
   return (
-    <div className="w-full bg-slate-50 min-h-screen">
+    <div className="w-full bg-slate-50 min-h-[100dvh]">
       <section className="bg-[#0b1a2e] pt-32 pb-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">

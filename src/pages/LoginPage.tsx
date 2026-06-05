@@ -106,7 +106,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 overflow-hidden font-sans">
+    <div className="min-h-[100dvh] flex flex-col md:flex-row bg-slate-50 overflow-hidden font-sans">
       {/* Left Side - Brand & Presentation (Hidden on smallest mobile) */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#0b1a2e] text-white p-12 flex-col justify-between relative overflow-hidden">
         {/* Background Decorative Pattern */}
@@ -162,7 +162,7 @@ export function LoginPage() {
       </div>
 
       {/* Right Side - Login Forms */}
-      <div className="flex-1 flex flex-col justify-between p-6 md:p-12 relative w-full lg:w-1/2 overflow-y-auto min-h-screen">
+      <div className="flex-1 flex flex-col justify-between p-6 md:p-12 relative w-full lg:w-1/2 overflow-y-auto min-h-[100dvh]">
         
         <div className="w-full flex justify-start">
           <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#0b1a2e] transition-colors font-medium text-sm">

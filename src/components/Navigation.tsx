@@ -167,7 +167,7 @@ export function Navigation() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="absolute top-20 left-0 w-full bg-[#0b1a2e] border-t border-white/10 shadow-2xl overflow-y-auto md:hidden"
-            style={{ maxHeight: 'calc(100vh - 80px)' }}
+            style={{ maxHeight: 'calc(100dvh - 80px)' }}
           >
             <div className="flex flex-col py-4">
               {(Object.keys(megaMenuData) as MenuKey[]).map((key) => (

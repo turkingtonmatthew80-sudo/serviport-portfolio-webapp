@@ -261,7 +261,7 @@ export function B2BRegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-[100dvh] bg-slate-50 flex flex-col py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-4xl flex items-center justify-between mb-8">
           <Link to="/" className="flex items-center gap-2 group">
             <Anchor className="text-[#00A9CE] group-hover:text-[#F7941D] transition-colors" size={28} />
@@ -297,7 +297,7 @@ export function B2BRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[100dvh] bg-slate-50 flex flex-col py-12 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-4xl flex items-center justify-between mb-8">
         <Link to="/" className="flex items-center gap-2 group">
           <Anchor className="text-[#00A9CE] group-hover:text-[#F7941D] transition-colors" size={28} />

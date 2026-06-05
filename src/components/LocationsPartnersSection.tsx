@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 export function LocationsPartnersSection() {
   return (
-    <section className="min-h-[100dvh] flex flex-col justify-center py-24 px-6 bg-gray-50 border-b border-gray-200">
+    <section className="min-h-[100dvh] flex flex-col justify-center py-16 md:py-24 px-4 md:px-6 bg-gray-50 border-b border-gray-200">
       <div className="max-w-[1400px] mx-auto w-full flex flex-col justify-center gap-16 lg:gap-24">
         {/* Locations */}
       <motion.div
@@ -79,18 +79,18 @@ export function LocationsPartnersSection() {
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.6 }}
-        className="bg-[#0b1a2e] text-white p-12 lg:p-16 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 mt-16 md:mt-24"
+        className="bg-[#0b1a2e] text-white p-12 lg:p-16 rounded-2xl shadow-xl flex flex-col items-center text-center mt-16 md:mt-24"
       >
-        <div className="md:w-2/3">
-          <div className="inline-block px-3 py-1.5 bg-white/10 border border-white/20 text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
             Futuro
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold mb-4 leading-[1.15]">Nuevos proyectos</h2>
-          <p className="text-slate-300 text-lg leading-relaxed">
+          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold mb-6 leading-[1.15]">Nuevos proyectos</h2>
+          <p className="text-slate-300 text-lg leading-relaxed mb-10">
             Contáctanos para conocer sobre nuevos proyectos. Estamos expandiendo nuestras capacidades operativas y tecnológicas para atender la creciente demanda del comercio exterior venezolano.
           </p>
         </div>
-        <div className="shrink-0 mt-6 md:mt-0">
+        <div className="shrink-0">
           <Link to="/contacto" className="group bg-[#F7941D] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
             CONTÁCTANOS
           </Link>

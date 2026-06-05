@@ -57,7 +57,7 @@ export function CareersPage() {
   ];
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen">
+    <div className="w-full bg-slate-50 min-h-[100dvh]">
       {/* HERO SECTION */}
       <section className="relative pt-24 pb-32 px-6 overflow-hidden min-h-[500px] flex flex-col justify-center">
         <div className="absolute inset-0">

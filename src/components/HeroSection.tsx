@@ -23,8 +23,8 @@ export function HeroSection() {
   const y = useTransform(scrollY, [0, 1000], [0, 250]);
 
   return (
-    <section className="relative w-full min-h-[calc(100dvh-5rem)] flex flex-col bg-[#0b1424]">
-      <div className="relative w-full flex-1 flex flex-col">
+    <section className="w-full flex flex-col bg-[#0b1424]">
+      <div className="relative w-full aspect-video flex flex-col justify-center overflow-hidden">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <motion.div 
             style={{ y }}
@@ -41,26 +41,26 @@ export function HeroSection() {
           </motion.div>
         </div>
 
-        <div className="relative z-10 max-w-[1400px] mx-auto px-6 w-full h-full flex flex-col justify-center flex-1 py-16 md:py-24">
+        <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-6 w-full flex flex-col justify-center my-auto">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="max-w-4xl text-white"
+            className="max-w-4xl text-white pt-10 pb-4 md:py-0"
           >
             <motion.h1 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="font-black leading-[1.05] tracking-tight mb-6 drop-shadow-xl"
+              className="font-black leading-[1.05] tracking-tight mb-2 md:mb-6 drop-shadow-xl"
             >
-              <span className="block text-2xl md:text-4xl lg:text-[3rem] text-slate-200 mb-2 tracking-normal font-bold">
+              <span className="block text-[5vw] md:text-4xl lg:text-[3rem] text-slate-200 mb-1 tracking-normal font-bold">
                 Soluciones de
               </span>
-              <span className="block text-5xl md:text-7xl lg:text-[6.5rem] text-white">
+              <span className="block text-[9vw] md:text-7xl lg:text-[6.5rem] text-white">
                 Logística <span className="text-[#F7941D]">Integral</span>
               </span>
-              <span className="block text-2xl md:text-4xl lg:text-[3rem] text-slate-300 mt-2 tracking-normal font-bold">
+              <span className="block text-[5vw] md:text-4xl lg:text-[3rem] text-slate-300 tracking-normal font-bold">
                 en Venezuela
               </span>
             </motion.h1>
@@ -69,18 +69,18 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mb-10 max-w-2xl drop-shadow-lg"
+              className="mb-4 md:mb-10 max-w-2xl drop-shadow-lg"
             >
-              <span className="text-2xl md:text-3xl text-[#00A9CE] font-bold block mb-3 border-l-4 border-[#F7941D] pl-4 bg-[#0b1a2e]/40 p-2 rounded-r-md">Tu carga, en manos expertas.</span>
+              <span className="text-[3.5vw] md:text-3xl text-[#00A9CE] font-bold block mb-2 md:mb-3 border-l-2 md:border-l-4 border-[#F7941D] pl-2 md:pl-4 bg-[#0b1a2e]/40 py-1 md:p-2 rounded-r-md w-fit">Tu carga, en manos expertas.</span>
             </motion.p>
             
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-5"
+              className="flex flex-col sm:flex-row gap-2 md:gap-5"
             >
-              <Link to="/herramientas" className="group bg-[#F7941D] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
+              <Link to="/herramientas" className="group bg-[#F7941D] text-white px-4 md:px-10 py-2 md:py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-1 md:gap-3 text-center text-[10px] md:text-base uppercase tracking-wider w-fit">
                 COTIZA CON NOSOTROS
                 <motion.span
                   className="inline-block transition-transform group-hover:translate-x-1"
@@ -88,7 +88,7 @@ export function HeroSection() {
                   →
                 </motion.span>
               </Link>
-              <Link to="/servicios" className="group border-2 border-[#F7941D] text-[#F7941D] hover:text-white hover:bg-[#F7941D] px-8 md:px-10 py-4 rounded font-bold transition-colors flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
+              <Link to="/servicios" className="group border-2 border-[#F7941D] text-[#F7941D] hover:text-white hover:bg-[#F7941D] px-4 md:px-10 py-1.5 md:py-4 rounded font-bold transition-colors flex items-center justify-center gap-1 md:gap-3 text-center text-[10px] md:text-base uppercase tracking-wider w-fit">
                 NUESTROS SERVICIOS
               </Link>
             </motion.div>
