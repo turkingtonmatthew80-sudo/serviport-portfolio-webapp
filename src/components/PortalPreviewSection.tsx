@@ -1,49 +1,56 @@
 import { Lock, BarChart, FileText, Anchor } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion } from "motion/react";
 
 export function PortalPreviewSection() {
   return (
     <section className="min-h-[100dvh] flex flex-col justify-center py-24 px-6 bg-gray-50/50 border-b border-gray-200">
-      <div className="max-w-[1400px] w-full mx-auto bg-[#0b1a2e] rounded-2xl overflow-hidden shadow-2xl relative">
+      <motion.div 
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+        className="max-w-[1400px] w-full mx-auto bg-[#0b1a2e] rounded-2xl overflow-hidden shadow-2xl relative"
+      >
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
           <Anchor size={400} />
         </div>
         
         <div className="flex flex-col lg:flex-row min-h-[600px]">
           <div className="lg:w-1/2 p-12 lg:p-20 z-10 flex flex-col justify-center">
-            <div className="inline-block px-6 py-3 bg-[#00A9CE] text-white font-bold tracking-wider text-sm md:text-base mb-6 uppercase shadow-sm">
+            <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
               Módulo de Acceso Único
             </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
+            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-white mb-6 leading-[1.15]">
               Accede a Serviport OS
             </h2>
-            <p className="text-slate-300 mb-10 leading-relaxed text-lg">
+            <p className="text-gray-300 text-lg leading-relaxed mb-10">
               Portal exclusivo para clientes B2B. Monitorea tus operaciones en tiempo real, gestiona documentos, aprueba proformas y coordina retiros de carga desde cualquier dispositivo.
             </p>
 
             <div className="space-y-6 mb-12">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center shrink-0">
-                  <BarChart className="text-[#00A9CE]" size={24} />
+                <div className="w-16 h-16 rounded-2xl bg-[#00A9CE]/10 border border-[#00A9CE]/20 flex items-center justify-center shrink-0">
+                  <BarChart className="text-[#00A9CE] w-8 h-8" strokeWidth={2} />
                 </div>
-                <div>
+                <div className="flex flex-col justify-center pt-2">
                   <h4 className="text-white font-bold text-lg mb-1">Monitoreo en tiempo real</h4>
                   <p className="text-slate-400 text-sm">Escalas de buques y trazabilidad de contenedores en el AGD.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center shrink-0">
-                  <FileText className="text-[#00A9CE]" size={24} />
+                <div className="w-16 h-16 rounded-2xl bg-[#00A9CE]/10 border border-[#00A9CE]/20 flex items-center justify-center shrink-0">
+                  <FileText className="text-[#00A9CE] w-8 h-8" strokeWidth={2} />
                 </div>
-                <div>
+                <div className="flex flex-col justify-center pt-2">
                   <h4 className="text-white font-bold text-lg mb-1">Gestión documental digital</h4>
                   <p className="text-slate-400 text-sm">Aprobación de proformas y descarga de facturas y manifiestos.</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/portal" className="bg-[#00A9CE] text-white px-8 py-3.5 rounded font-bold hover:bg-[#008EBF] transition-colors text-center flex items-center justify-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-4 mt-6">
+              <Link to="/portal" className="group bg-[#F7941D] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
                 <Lock size={18} />
                 INGRESAR AL PORTAL
               </Link>
@@ -70,13 +77,13 @@ export function PortalPreviewSection() {
                  </li>
                </ul>
 
-               <Link to="/portal" className="border-2 border-white/20 text-white px-8 py-3.5 rounded font-bold hover:bg-white/10 transition-colors text-center block w-fit">
+               <Link to="/portal" className="group border-2 border-[#F7941D] text-[#F7941D] hover:text-white hover:bg-[#F7941D] px-8 md:px-10 py-4 rounded font-bold transition-colors flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
                  REGISTRO DE CLIENTE B2B
                </Link>
              </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

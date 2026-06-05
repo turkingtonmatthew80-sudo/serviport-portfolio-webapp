@@ -40,20 +40,32 @@ export function FAQSection() {
   return (
     <section className="bg-slate-50 py-20 px-6 border-t border-gray-200" id="faq">
       <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col items-center text-center mb-12">
-          <div className="w-16 h-16 bg-[#0b1a2e]/5 rounded-full flex items-center justify-center mb-6">
-             <MessageCircleQuestion className="text-[#F7941D]" size={32} />
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col items-center text-center mb-12"
+        >
+          <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
+            Soporte y Dudas
           </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#0b1a2e] mb-4">Preguntas Frecuentes</h2>
-          <p className="text-gray-600 text-lg max-w-2xl">
+          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-[#0b1a2e] mb-6 leading-[1.15]">
+            Preguntas Frecuentes
+          </h2>
+          <p className="text-gray-600 text-lg max-w-3xl mx-auto leading-relaxed mb-10">
             Resuelve tus dudas rápidamente sobre nuestras operativas, coberturas y gestión aduanera de nuestros servicios logísticos portuarios.
           </p>
-        </div>
+        </motion.div>
 
         <div className="space-y-4">
           {faqs.map((faq, index) => (
-            <div 
-              key={index} 
+            <motion.div 
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
               className={`bg-white border rounded-sm transition-all duration-300 ${openIndex === index ? 'border-[#00A9CE] shadow-md' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
             >
               <button
@@ -88,16 +100,22 @@ export function FAQSection() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           ))}
         </div>
 
-        <div className="mt-12 text-center">
-           <p className="text-gray-600 mb-4 font-medium">¿Aún tienes dudas adicionales?</p>
-           <Link to="/contacto" className="inline-flex items-center justify-center bg-[#0b1a2e] text-white font-bold py-3 px-8 rounded-sm hover:bg-slate-800 transition-colors">
-              Ir a la sección de contacto
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="mt-12 text-center flex flex-col items-center"
+        >
+           <p className="text-gray-600 mb-6 font-medium text-lg">¿Aún tienes dudas adicionales?</p>
+           <Link to="/contacto" className="group bg-[#0b1a2e] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-slate-800 transition-colors shadow-lg flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
+              IR A LA SECCIÓN DE CONTACTO
            </Link>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

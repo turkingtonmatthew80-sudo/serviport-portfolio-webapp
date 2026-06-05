@@ -6,7 +6,7 @@ export function FooterSection() {
     <>
       {/* Actual Footer */}
       <footer className="bg-[#0b1a2e] text-white py-20">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 lg:gap-16">
+        <div className="max-w-[1400px] mx-auto px-6 grid md:grid-cols-4 gap-12 lg:gap-16">
           {/* Col 1: Branding & Contact */}
           <div>
             <Link to="/" className="flex items-center mb-8">
@@ -69,7 +69,7 @@ export function FooterSection() {
         </div>
 
         {/* Bottom strip */}
-        <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
+        <div className="max-w-[1400px] mx-auto px-6 mt-20 pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
            <p>© 2026 Serviport Agentes Navieros C.A. - Sitio web desarrollado por <a href="https://www.linkedin.com/in/matthew-turkington-dev" target="_blank" rel="noopener noreferrer" className="text-[#00A9CE] hover:underline">Matthew Turkington</a></p>
            <div className="flex gap-4 sm:gap-6 flex-wrap justify-center">
              <Link to="/terminos-y-condiciones" className="hover:text-slate-300 transition-colors text-center">Términos y Condiciones</Link>

@@ -190,24 +190,37 @@ export function AboutSection() {
       <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center">
         <div className="flex flex-col lg:flex-row justify-between gap-16 lg:gap-24 mb-16 items-center flex-1">
           {/* Left Content */}
-          <div className="lg:w-[50%] flex flex-col justify-center">
-            <div className="inline-block px-6 py-3 bg-[#00A9CE] text-white font-bold tracking-wider text-sm md:text-base mb-6 uppercase shadow-sm w-fit">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6 }}
+            className="lg:w-[50%] flex flex-col justify-center"
+          >
+            <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm w-fit">
               Navegando Contigo Hacia el Éxito
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-[#0b1a2e] mb-6 leading-[1.15]">
               Agenciamiento, estiba, almacenaje y transporte: su cadena logística asegurada de puerto a puerta
             </h2>
-            <p className="text-gray-600 leading-relaxed text-lg mb-10 md:text-xl">
+            <p className="text-gray-600 text-lg leading-relaxed mb-10">
               En Serviport, brindamos servicios integrales de logística portuaria y agenciamiento naviero de buques desde o hacia Venezuela, enfocados en el crecimiento constante de nuestros clientes, trabajadores y aliados, cumpliendo con todas las leyes y regulaciones aplicables.
             </p>
 
-            <Link to="/nosotros" className="flex items-center gap-2 text-[#00A9CE] font-bold hover:text-[#008EBF] transition-colors uppercase tracking-wider text-sm md:text-base mb-6 lg:mb-0 w-fit">
-              <ArrowRight size={20} strokeWidth={2.5} /> CONOCE MÁS SOBRE NOSOTROS
+            <Link to="/nosotros" className="group bg-[#F7941D] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
+              CONOCE MÁS SOBRE NOSOTROS
+              <motion.span className="inline-block transition-transform group-hover:translate-x-1"><ArrowRight size={20} strokeWidth={2.5} /></motion.span>
             </Link>
-          </div>
+          </motion.div>
 
           {/* Right Content - Animated Shipping Container Stats */}
-          <div className="lg:w-[50%] flex perspective-1000 w-full max-w-xl mx-auto lg:mx-0">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="lg:w-[50%] flex perspective-1000 w-full max-w-xl mx-auto lg:mx-0"
+          >
             <div className="w-full h-[400px] md:h-[480px] lg:h-[500px] shadow-2xl relative overflow-hidden rounded-sm group transform-gpu border border-black/10">
             <AnimatePresence mode="wait">
               <motion.div
@@ -310,12 +323,18 @@ export function AboutSection() {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Trusted By Leaders - Full Width Marquee */}
-      <div className="pt-8 overflow-hidden w-full max-w-[1400px] mx-auto">
-        <div className="inline-block px-6 py-3 bg-[#00A9CE] text-white font-bold tracking-wider text-sm md:text-base mb-10 uppercase shadow-sm">
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+        className="pt-8 overflow-hidden w-full max-w-[1400px] mx-auto"
+      >
+        <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
           Con la confianza de líderes globales
         </div>
         <div className="relative flex overflow-x-hidden group bg-white py-10 shadow-sm border border-gray-100 rounded-sm">
@@ -328,7 +347,7 @@ export function AboutSection() {
             {allLogos}
           </motion.div>
         </div>
-      </div>
+      </motion.div>
       </div>
     </section>
   );

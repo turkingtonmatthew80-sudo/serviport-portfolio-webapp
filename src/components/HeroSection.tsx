@@ -1,70 +1,134 @@
 import { Anchor, ShieldCheck, Ship, Box } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, useMotionValue, useTransform, animate, useInView, useScroll } from "motion/react";
+import { useEffect, useRef } from "react";
+
+function Counter({ to }: { to: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-20px" });
+
+  useEffect(() => {
+    if (inView) {
+      animate(count, to, { duration: 1.5, ease: "easeOut" });
+    }
+  }, [inView, count, to]);
+
+  return <motion.span ref={ref}>{rounded}</motion.span>;
+}
 
 export function HeroSection() {
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 1000], [0, 250]);
+
   return (
-    <section className="relative w-full min-h-[calc(100dvh-5rem)] flex flex-col bg-slate-100">
+    <section className="relative w-full min-h-[calc(100dvh-5rem)] flex flex-col bg-[#0b1424]">
       <div className="relative w-full flex-1 flex flex-col">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
-          <iframe
-            src="https://player.vimeo.com/video/1197970936?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1"
-            className="absolute top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-h-full min-w-[177.77vh] -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-80"
-            allow="autoplay; fullscreen; picture-in-picture"
-          ></iframe>
-          {/* Dark overlay gradient to make text readable */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1a2e]/95 via-[#0b1a2e]/80 to-[#0b1a2e]/30"></div>
+          <motion.div 
+            style={{ y }}
+            className="absolute -top-[15%] w-full h-[130%]"
+          >
+            <iframe
+              src="https://player.vimeo.com/video/1197970936?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1"
+              className="absolute top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-h-full min-w-[177.77vh] -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-80"
+              allow="autoplay; fullscreen; picture-in-picture"
+            ></iframe>
+            {/* Subtle dark overlay gradient to make text readable but keep video bright */}
+            <div className="absolute inset-0 bg-[#0b1a2e]/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0b1a2e]/80 via-[#0b1a2e]/40 to-transparent"></div>
+          </motion.div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 h-full flex flex-col justify-center flex-1">
+        <div className="relative z-10 max-w-[1400px] mx-auto px-6 w-full h-full flex flex-col justify-center flex-1 py-16 md:py-24">
           <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="max-w-3xl text-white mt-12 py-12 md:py-24"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="max-w-4xl text-white"
           >
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight mb-6 tracking-tight">
-              Soluciones de Logística Integral en Venezuela
-            </h1>
-            <p className="text-lg md:text-2xl text-slate-300 mb-10 leading-relaxed font-medium max-w-2xl">
-              Desde el agenciamiento naviero hasta el almacenaje aduanero y el transporte nacional. Serviport es tu aliado estratégico en los principales puertos del país.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/herramientas" className="bg-[#00A9CE] text-white px-10 py-5 rounded font-bold hover:bg-[#008EBF] transition-colors shadow-md text-center text-lg">
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="font-black leading-[1.05] tracking-tight mb-6 drop-shadow-xl"
+            >
+              <span className="block text-2xl md:text-4xl lg:text-[3rem] text-slate-200 mb-2 tracking-normal font-bold">
+                Soluciones de
+              </span>
+              <span className="block text-5xl md:text-7xl lg:text-[6.5rem] text-white">
+                Logística <span className="text-[#F7941D]">Integral</span>
+              </span>
+              <span className="block text-2xl md:text-4xl lg:text-[3rem] text-slate-300 mt-2 tracking-normal font-bold">
+                en Venezuela
+              </span>
+            </motion.h1>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="mb-10 max-w-2xl drop-shadow-lg"
+            >
+              <span className="text-2xl md:text-3xl text-[#00A9CE] font-bold block mb-3 border-l-4 border-[#F7941D] pl-4 bg-[#0b1a2e]/40 p-2 rounded-r-md">Tu carga, en manos expertas.</span>
+            </motion.p>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="flex flex-col sm:flex-row gap-5"
+            >
+              <Link to="/herramientas" className="group bg-[#F7941D] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
                 COTIZA CON NOSOTROS
+                <motion.span
+                  className="inline-block transition-transform group-hover:translate-x-1"
+                >
+                  →
+                </motion.span>
               </Link>
-              <Link to="/servicios" className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-10 py-5 rounded font-bold hover:bg-white/20 transition-colors text-center text-lg">
+              <Link to="/servicios" className="group border-2 border-[#F7941D] text-[#F7941D] hover:text-white hover:bg-[#F7941D] px-8 md:px-10 py-4 rounded font-bold transition-colors flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
                 NUESTROS SERVICIOS
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
 
       {/* Trust Bar */}
-      <div className="w-full bg-[#1b1c20] relative z-20 shrink-0">
-        <div className="max-w-7xl mx-auto px-6 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="flex flex-col items-center justify-center text-center px-4 md:border-r border-white/10 last:border-0 md:last:border-r-0">
-              <Anchor size={32} strokeWidth={2.5} className="text-[#00A9CE] mb-4" />
-              <span className="text-4xl font-extrabold text-white mb-2 tracking-tight">2</span>
-              <span className="text-sm text-gray-400 font-medium">Puertos activos</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center px-4 md:border-r border-white/10 last:border-0 md:last:border-r-0">
-              <ShieldCheck size={32} strokeWidth={2.5} className="text-[#00A9CE] mb-4" />
-              <span className="text-4xl font-extrabold text-white mb-2 tracking-tight">15 <span className="text-3xl">+</span></span>
-              <span className="text-sm text-gray-400 font-medium">Años de experiencia</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center px-4 md:border-r border-white/10 last:border-0 md:last:border-r-0">
-              <Ship size={32} strokeWidth={2.5} className="text-[#00A9CE] mb-4" />
-              <span className="text-4xl font-extrabold text-white mb-2 tracking-tight">6</span>
-              <span className="text-sm text-gray-400 font-medium">Líneas de servicio</span>
-            </div>
-            <div className="flex flex-col items-center justify-center text-center px-4">
-              <Box size={32} strokeWidth={2.5} className="text-[#00A9CE] mb-4" />
-              <span className="text-4xl font-extrabold text-white mb-2 tracking-tight">60 <span className="text-3xl">+</span></span>
-              <span className="text-sm text-gray-400 font-medium">Clientes corporativos B2B</span>
-            </div>
+      <div className="w-full bg-[#0b1424] relative z-20 shrink-0 border-t border-white/5">
+        <div className="max-w-[1400px] mx-auto px-2 md:px-6 py-6 md:py-12">
+          <div className="grid grid-cols-4 gap-2 md:gap-8">
+            {[
+              { icon: Anchor, value: 2, suffix: "", label: "Puertos" },
+              { icon: ShieldCheck, value: 15, suffix: "+", label: "Años" },
+              { icon: Ship, value: 6, suffix: "", label: "Líneas" },
+              { icon: Box, value: 60, suffix: "+", label: "Clientes B2B" },
+            ].map((stat, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-10px" }}
+                transition={{ duration: 0.6, delay: 0.1 * i, ease: "easeOut" }}
+                className="group flex flex-col items-center justify-start text-center px-1 md:px-4 md:border-r border-white/10 last:border-0 cursor-default"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className="w-10 h-10 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#00A9CE]/10 flex items-center justify-center mb-3 md:mb-6 group-hover:bg-[#00A9CE]/20 transition-colors border border-[#00A9CE]/20 group-hover:border-[#F7941D]/30"
+                >
+                  <stat.icon className="w-5 h-5 md:w-7 md:h-7 text-[#00A9CE] group-hover:text-[#F7941D] transition-colors" strokeWidth={2} />
+                </motion.div>
+                <div className="text-2xl md:text-5xl font-black text-white mb-1 md:mb-2 tracking-tight drop-shadow-md flex items-center justify-center">
+                  <Counter to={stat.value} />
+                  {stat.suffix && <span className="text-[#F7941D] ml-1">{stat.suffix}</span>}
+                </div>
+                <span className="text-[10px] md:text-sm text-slate-400 font-bold tracking-tight md:tracking-widest uppercase mt-1 md:mt-2 group-hover:text-slate-300 transition-colors leading-tight break-words">
+                  {stat.label}
+                </span>
+              </motion.div>
+            ))}
           </div>
         </div>
       </div>
