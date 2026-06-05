@@ -1,14 +1,8 @@
-# Run and deploy your AI Studio app
+# Instalar el Sistema Web Serviport de forma local: 
 
-This contains everything you need to run your app locally.
+**Requisitos previos:** Node.js
 
-## Run Locally
+1. Instalar dependencias:
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+`npm install`
+2. Configurar la `GEMINI_API_KEY`
