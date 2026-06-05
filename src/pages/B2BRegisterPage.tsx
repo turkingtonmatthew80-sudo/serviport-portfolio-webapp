@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Anchor, CheckCircle2, ChevronRight, Building, ShieldCheck, CreditCard, MapPin, Eye, EyeOff, Search, Map as MapIcon, X } from "lucide-react";
+import { Anchor, CheckCircle2, ChevronRight, Building, ShieldCheck, CreditCard, MapPin, Eye, EyeOff, Search, Map as MapIcon, X, Loader2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth, RoleId } from "../contexts/AuthContext";
+import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { auth } from "../lib/firebase";
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -155,10 +157,12 @@ export function B2BRegisterPage() {
   const [representante, setRepresentante] = useState("");
   
   const navigate = useNavigate();
-  const { register, loginWithGoogle } = useAuth();
+  const { register, registerGoogleUser } = useAuth();
   const [error, setError] = useState("");
 
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGoogleAutofilled, setIsGoogleAutofilled] = useState(false);
 
   const toggleService = (id: string) => {
     setSelectedServices(prev => 
@@ -166,17 +170,34 @@ export function B2BRegisterPage() {
     );
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleAutofill = async () => {
     setError("");
+    setIsGoogleLoading(true);
     try {
-      await loginWithGoogle();
-      navigate("/portal");
-    } catch (err: any) {
-      if (err.message === "auth/user-not-registered") {
-         setError("Solo las cuentas ya registradas en nuestro sistema pueden usar el inicio de sesión con Google. Por favor, complete el formulario con una contraseña.");
-      } else if (err.code !== "auth/popup-closed-by-user") {
-         setError("Ocurrió un error con el inicio de sesión de Google.");
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      if (user.displayName) setRepresentante(user.displayName);
+      if (user.email) {
+        const parts = user.email.split("@");
+        if (parts.length === 2) {
+          setEmailUser(parts[0]);
+          setEmailDomain(parts[1]);
+        }
       }
+      
+      // Do NOT sign out here. Keep them signed in so we can finalize registration without re-authenticating.
+      setIsGoogleAutofilled(true);
+    } catch (err: any) {
+      if (err.code === "auth/unauthorized-domain") {
+         setError("Error de dominio: El dominio actual no está autorizado en Google Firebase.");
+      } else if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
+         setError("Ocurrió un error al extraer los datos de Google.");
+      }
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -191,7 +212,7 @@ export function B2BRegisterPage() {
         }
         
         const isSecure = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._-]{8,}$/.test(password);
-        if (!isSecure) {
+        if (!isGoogleAutofilled && !isSecure) {
            setError("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.");
            return;
         }
@@ -209,21 +230,30 @@ export function B2BRegisterPage() {
       const fullEmail = `${emailUser}@${emailDomain}`;
 
       try {
-        await register({
-          razonSocial,
-          email: fullEmail,
-          rif: fullRif,
-          roles: selectedServices as RoleId[]
-        }, password);
+        if (isGoogleAutofilled) {
+          await registerGoogleUser({
+            razonSocial,
+            email: fullEmail,
+            rif: fullRif,
+            roles: selectedServices as RoleId[]
+          });
+        } else {
+          await register({
+            razonSocial,
+            email: fullEmail,
+            rif: fullRif,
+            roles: selectedServices as RoleId[]
+          }, password);
+        }
         
         setIsSuccess(true);
       } catch (err: any) {
-        if (err.message === "auth/email-already-in-use" || err.code === "auth/email-already-in-use") {
+        if (err.message === "auth/email-already-in-use" || err.code === "auth/email-already-in-use" || err.code === "auth/credential-already-in-use") {
           setError("El correo electrónico ya está registrado. Por favor, intenta iniciar sesión.");
         } else if (err.code === "auth/operation-not-allowed") {
           setError("El registro por correo electrónico no está habilitado. Por favor, contacta a soporte o habilítalo en la consola de Firebase.");
         } else {
-          setError("Hubo un error al crear la cuenta. Verifica tus datos o intenta más tarde.");
+          setError("Hubo un error al crear la cuenta. Verifica tus datos o intenta más tarde. Detalle: " + (err.message || ""));
         }
       }
     }
@@ -243,11 +273,21 @@ export function B2BRegisterPage() {
              <CheckCircle2 size={40} />
           </div>
           <h2 className="text-3xl font-bold text-[#0b1a2e] mb-2 tracking-tight">¡Registro Exitoso!</h2>
-          <p className="text-gray-500 mb-8 leading-relaxed">
-            Hemos enviado un correo electrónico a <span className="font-semibold text-gray-800">{emailUser}@{emailDomain}</span>.
-            <br/><br/>
-            Por favor, revisa tu bandeja de entrada (o carpeta de spam) y haz clic en el enlace adjunto para <strong>verificar tu cuenta corporativa</strong> antes de iniciar sesión.
-          </p>
+          
+          {isGoogleAutofilled ? (
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              Tu cuenta corporativa ha sido creada y validada exitosamente mediante tu cuenta de Google.
+              <br/><br/>
+              Ya puedes iniciar sesión en el portal utilizando la opción de <strong>Continuar con Google</strong>.
+            </p>
+          ) : (
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              Hemos enviado un correo electrónico a <span className="font-semibold text-gray-800">{emailUser}@{emailDomain}</span>.
+              <br/><br/>
+              Por favor, revisa tu bandeja de entrada (o carpeta de spam) y haz clic en el enlace adjunto para <strong>verificar tu cuenta corporativa</strong> antes de iniciar sesión.
+            </p>
+          )}
+
           <Link to="/login" className="inline-flex w-full bg-[#00A9CE] text-white px-6 py-3.5 rounded-lg font-bold hover:bg-[#008eac] transition-all justify-center">
             IR AL INICIO DE SESIÓN
           </Link>
@@ -352,10 +392,29 @@ export function B2BRegisterPage() {
 
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="mb-8">
+                <div className="mb-6">
                   <h3 className="text-xl font-bold text-[#0b1a2e] flex items-center gap-2"><Building className="text-[#00A9CE]" /> Datos Fiscales</h3>
                   <p className="text-slate-500 text-sm mt-2">Ingresa los datos fiscales de tu empresa. Usaremos esta información para emitir facturas.</p>
                 </div>
+
+                <button 
+                  type="button" 
+                  onClick={handleGoogleAutofill}
+                  disabled={isGoogleLoading}
+                  className="w-full mb-6 bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
+                >
+                  {isGoogleLoading ? (
+                    <Loader2 size={18} className="animate-spin text-gray-500" />
+                  ) : (
+                    <svg className="h-5 w-5" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                    </svg>
+                  )}
+                  <span>Autocompletar Nombre completo y Correo con Google</span>
+                </button>
                 
                 <div className="space-y-5 mb-8">
                   {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200 font-medium">{error}</div>}
@@ -426,29 +485,31 @@ export function B2BRegisterPage() {
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex justify-between">
-                      <span>Contraseña Acceso Portal *</span>
-                      <span className="text-xs text-gray-500 font-normal">Mín. 8 caracteres, 1 may/min, 1 número</span>
-                    </label>
-                    <div className="relative">
-                      <input 
-                        type={showPassword ? "text" : "password"} 
-                        required 
-                        value={password} 
-                        onChange={e => setPassword(e.target.value)} 
-                        placeholder="••••••••" 
-                        className="w-full border border-gray-300 rounded-md pl-4 pr-10 py-2.5 focus:border-[#00A9CE] focus:ring-1 focus:ring-[#00A9CE] focus:outline-none transition-all text-gray-900" 
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
+                  {!isGoogleAutofilled && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex justify-between">
+                        <span>Contraseña Acceso Portal *</span>
+                        <span className="text-xs text-gray-500 font-normal">Mín. 8 caracteres, 1 may/min, 1 número</span>
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type={showPassword ? "text" : "password"} 
+                          required={!isGoogleAutofilled}
+                          value={password} 
+                          onChange={e => setPassword(e.target.value)} 
+                          placeholder="••••••••" 
+                          className="w-full border border-gray-300 rounded-md pl-4 pr-10 py-2.5 focus:border-[#00A9CE] focus:ring-1 focus:ring-[#00A9CE] focus:outline-none transition-all text-gray-900" 
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 
                 <div className="flex gap-4">
@@ -469,6 +530,8 @@ export function B2BRegisterPage() {
                   <p className="text-slate-500 text-sm mt-2">Revisa el resumen de tu suscripción y confirma la activación.</p>
                 </div>
                 
+                {error && <div className="mb-6 bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200 font-medium">{error}</div>}
+
                 <div className="bg-slate-50 border border-gray-200 rounded-xl p-6 mb-8">
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between items-center pb-3 border-b border-gray-200">
@@ -508,29 +571,6 @@ export function B2BRegisterPage() {
                     Confirmar y Activar 
                   </button>
                 </div>
-
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">O iniciar sesión con</span>
-                  </div>
-                </div>
-
-                <button 
-                  type="button" 
-                  onClick={handleGoogleSignup}
-                  className="w-full bg-white border border-gray-300 text-gray-700 px-6 py-3.5 rounded-lg font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  <span>Google</span>
-                </button>
               </div>
             )}
           </form>

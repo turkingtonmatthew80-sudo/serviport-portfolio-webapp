@@ -10,7 +10,7 @@ import {
   GoogleAuthProvider,
   User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 export type RoleId = 'naviera' | 'armador' | 'importador' | 'exportador' | 'agente_aduana' | 'transportista';
@@ -29,8 +29,10 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<boolean>;
   checkIfUserExists: (email: string) => Promise<boolean>;
   register: (user: Omit<User, 'id'>, password: string) => Promise<boolean>;
+  registerGoogleUser: (user: Omit<User, 'id'>) => Promise<boolean>;
   resetPassword: (email: string) => Promise<boolean>;
   logout: () => void;
+  deleteAccount: () => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -64,7 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           } else {
             console.warn("User document not found in Firestore. Strict security requires it.");
-            await signOut(auth);
+            // Do not aggressively sign out here, because the B2BRegisterPage Google autofill 
+            // relies on the Firebase user session being active to create the document in step 3.
             setUser(null);
           }
         } catch (error: any) {
@@ -148,7 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return true;
     } catch (error: any) {
-      console.error("Google Auth failed:", error);
+      if (error.message !== "auth/user-not-registered" && error.code !== "auth/user-not-registered") {
+        console.error("Google Auth failed:", error);
+      }
       throw error;
     }
   };
@@ -203,11 +208,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const registerGoogleUser = async (newUser: Omit<User, 'id'>) => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) throw new Error("No Google user session found.");
+    
+    // We assume email is verified for Google Auth, or we can send verification if needed.
+    const firestoreUser = {
+      email: newUser.email,
+      razonSocial: newUser.razonSocial,
+      rif: newUser.rif,
+      roles: newUser.roles,
+    };
+
+    try {
+      await setDoc(doc(db, 'users', firebaseUser.uid), firestoreUser);
+    } catch (error: any) {
+      console.warn("Could not write user to db:", error);
+      throw error;
+    }
+
+    await signOut(auth);
+    setUser(null);
+    return true;
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
       console.error("Logout error", error);
+    }
+  };
+
+  const deleteAccount = async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) throw new Error("No user session found.");
+
+    try {
+      await deleteDoc(doc(db, 'users', firebaseUser.uid));
+      await firebaseUser.delete();
+      setUser(null);
+      return true;
+    } catch (error: any) {
+      console.error("Delete account error", error);
+      throw error;
     }
   };
 
@@ -222,7 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, checkIfUserExists, register, resetPassword, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, checkIfUserExists, register, registerGoogleUser, resetPassword, logout, deleteAccount, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

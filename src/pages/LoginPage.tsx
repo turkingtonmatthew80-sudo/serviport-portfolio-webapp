@@ -55,12 +55,17 @@ export function LoginPage() {
       await loginWithGoogle();
       navigate("/portal");
     } catch (err: any) {
-      if (err.message === "auth/user-not-registered") {
+      if (err.message === "auth/user-not-registered" || err.code === "auth/user-not-registered") {
         setError("Acceso denegado: Solo las cuentas B2B registradas en nuestra base corporativa pueden iniciar sesión con Google.");
-      } else if (err.code === "auth/popup-closed-by-user") {
+      } else if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
         setError(""); // Ignorar si el usuario cierra el popup
+      } else if (err.code === "auth/account-exists-with-different-credential") {
+        setError("Ya existe una cuenta con este correo corporativo (posiblemente usando contraseña). Intenta iniciar sesión con tu correo y contraseña.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setError("Error de dominio: El dominio actual no está autorizado en Google Firebase. Añade el dominio de esta página a los 'Authorized domains' en la consola de Firebase Authentication.");
       } else {
-        setError("Ocurrió un error con la autenticación de Google.");
+        console.error("Login with Google Error", err);
+        setError("Ocurrió un error con la autenticación de Google. " + (err.message || ""));
       }
     } finally {
       setIsGoogleLoading(false);

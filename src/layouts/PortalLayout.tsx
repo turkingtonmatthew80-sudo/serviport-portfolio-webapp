@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { Ship, Package, Navigation, LayoutDashboard, FileText, Anchor, Settings, LogOut, Search, Clock, PlusCircle, CheckCircle, ArrowRightLeft, FileSearch, Truck } from "lucide-react";
+import { Ship, Package, Navigation, LayoutDashboard, FileText, Anchor, Settings, LogOut, Search, Clock, PlusCircle, CheckCircle, ArrowRightLeft, FileSearch, Truck, Menu, X } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -7,9 +7,15 @@ import { useAuth } from "../contexts/AuthContext";
 export function PortalLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { user, logout, isLoading } = useAuth();
   
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!isLoading && !user) {
       navigate('/login');
@@ -102,91 +108,122 @@ export function PortalLayout() {
     ]
   });
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
-      <aside className={cn(
-        "bg-[#0b1a2e] text-white transition-all duration-300 md:relative fixed inset-y-0 z-50 flex flex-col",
-        isSidebarOpen ? "w-64" : "w-20 md:w-20 -left-full md:left-0"
-      )}>
-        <div className="h-16 flex items-center justify-center border-b border-white/10 px-4">
-          {isSidebarOpen ? (
-            <div className="font-bold text-xl flex items-center gap-2">
-              <Anchor className="text-[#00A9CE]" size={24} />
-              <span>Serviport OS</span>
-            </div>
-          ) : (
-            <Anchor className="text-[#00A9CE]" size={24} />
-          )}
+  const SidebarContent = ({ isCollapsed = false }) => (
+    <>
+      <div className="h-16 flex items-center px-4 border-b border-white/10 shrink-0">
+        <div className={cn("font-bold text-xl flex items-center gap-2", isCollapsed ? "justify-center w-full" : "")}>
+          <Anchor className="text-[#00A9CE] shrink-0" size={24} />
+          {!isCollapsed && <span className="truncate">Serviport OS</span>}
         </div>
-        
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
-          <nav className="py-6 flex flex-col gap-6 px-3">
-            {groups.map((group, idx) => (
-              <div key={idx}>
-                {isSidebarOpen && <p className="text-xs font-bold text-gray-500 mb-2 px-3">{group.title}</p>}
-                <div className="flex flex-col gap-1">
-                  {group.items.map((item) => (
+      </div>
+      
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+        <nav className="py-6 flex flex-col gap-6 px-3">
+          {groups.map((group, idx) => (
+            <div key={idx}>
+              {!isCollapsed && <p className="text-xs font-bold text-gray-500 mb-2 px-3 tracking-wider">{group.title}</p>}
+              <div className="flex flex-col gap-1">
+                {group.items.map((item) => {
+                  const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+                  return (
                     <Link
                       key={item.path}
                       to={item.path}
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
-                        location.pathname === item.path || location.pathname.startsWith(item.path)
+                        isActive
                           ? "bg-[#F7941D] text-white font-medium shadow-sm" 
                           : "text-gray-300 hover:bg-white/10 hover:text-white"
                       )}
-                      title={!isSidebarOpen ? item.name : undefined}
+                      title={isCollapsed ? item.name : undefined}
                     >
                       <item.icon size={20} className="shrink-0" />
-                      {isSidebarOpen && <span className="text-sm">{item.name}</span>}
+                      {!isCollapsed && <span className="text-sm truncate">{item.name}</span>}
                     </Link>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </nav>
-        </div>
-        
-        <div className="p-4 border-t border-white/10">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 text-gray-300 hover:bg-white/10 hover:text-white rounded-md transition-colors w-full"
-            title={!isSidebarOpen ? "Cerrar sesión" : undefined}
-          >
-            <LogOut size={20} className="shrink-0" />
-            {isSidebarOpen && <span className="text-sm">Cerrar sesión</span>}
-          </button>
-        </div>
+            </div>
+          ))}
+        </nav>
+      </div>
+      
+      <div className="p-4 border-t border-white/10 shrink-0">
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 text-gray-300 hover:bg-white/10 hover:text-white rounded-md transition-colors w-full",
+            isCollapsed ? "justify-center" : ""
+          )}
+          title={isCollapsed ? "Cerrar sesión" : undefined}
+        >
+          <LogOut size={20} className="shrink-0" />
+          {!isCollapsed && <span className="text-sm">Cerrar sesión</span>}
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-[#0b1a2e]/50 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 bg-[#0b1a2e] text-white z-50 w-72 flex flex-col transition-transform duration-300 ease-in-out md:hidden shadow-xl",
+        isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <SidebarContent isCollapsed={false} />
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className={cn(
+        "bg-[#0b1a2e] text-white transition-all duration-300 z-30 hidden md:flex flex-col relative shrink-0",
+        isDesktopSidebarOpen ? "w-64" : "w-20"
+      )}>
+        <SidebarContent isCollapsed={!isDesktopSidebarOpen} />
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Topbar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm z-10 sticky top-0">
           <div className="flex items-center gap-4">
+            {/* Mobile Toggle */}
             <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-gray-500 hover:text-[#00A9CE] transition-colors"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="text-gray-500 hover:text-[#00A9CE] transition-colors md:hidden p-1 -ml-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00A9CE]"
             >
-              <Navigation size={20} className="md:hidden" />
-              <Navigation size={20} className="hidden md:block" />
+              <Menu size={24} />
+            </button>
+            {/* Desktop Toggle */}
+            <button 
+              onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
+              className="text-gray-500 hover:text-[#00A9CE] transition-colors hidden md:block p-1 -ml-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00A9CE]"
+            >
+              <Navigation size={20} />
             </button>
             <h1 className="text-lg font-bold text-[#0b1a2e] tracking-tight hidden sm:block">Portal B2B</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
              <div className="text-sm text-right hidden sm:block">
-               <p className="font-bold text-[#0b1a2e]">{user.razonSocial}</p>
-               <p className="text-gray-500 text-xs font-medium">Roles: {user.roles.join(', ')}</p>
+               <p className="font-bold text-[#0b1a2e] truncate max-w-[200px]">{user.razonSocial}</p>
+               <p className="text-gray-500 text-xs font-medium truncate max-w-[200px]">Roles: {user.roles.join(', ')}</p>
              </div>
-             <div className="w-10 h-10 rounded-full bg-[#00A9CE] text-white flex justify-center items-center font-bold shadow-md border-2 border-white">
+             <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full bg-[#00A9CE] text-white flex justify-center items-center font-bold shadow-md border-2 border-white">
                {user.razonSocial.charAt(0).toUpperCase()}
              </div>
           </div>
         </header>
         
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

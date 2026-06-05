@@ -35,6 +35,8 @@ import { NavieraDashboard } from './pages/portal/roles/NavieraDashboard';
 import { ImportadorDashboard } from './pages/portal/roles/ImportadorDashboard';
 import { RoleGuard } from './components/RoleGuard';
 
+import { SuscripcionPage } from './pages/portal/SuscripcionPage';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -86,7 +88,7 @@ export default function App() {
           <Route path="importador/retiros" element={<RoleGuard allowedRoles={['importador']}><div className="p-8"><h2 className="text-xl font-bold">Retiros</h2>Módulo Importador en desarrollo</div></RoleGuard>} />
 
           {/* General (accessible by anyone logged in) */}
-          <Route path="suscripcion" element={<div className="p-8"><h2 className="text-xl font-bold">Mi Suscripción</h2>Configuración de plan y módulos</div>} />
+          <Route path="suscripcion" element={<SuscripcionPage />} />
           
           {/* Fallback for other modules to prevent 404s */}
           <Route path=":rol/dashboard" element={<RoleGuard><div className="p-8"><h2 className="text-xl font-bold">Dashboard</h2>Módulo en desarrollo</div></RoleGuard>} />

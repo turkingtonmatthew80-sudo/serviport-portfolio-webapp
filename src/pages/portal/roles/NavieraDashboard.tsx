@@ -19,7 +19,7 @@ export function NavieraDashboard() {
           where("userId", "==", user.id)
         );
         const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
         
         // Sort explicitly by createdAt or any reasonable mechanism if timestamps exist
         setPortCalls(data.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
