@@ -1,13 +1,47 @@
 import { Activity, Anchor, FileText, TrendingUp, Ship } from "lucide-react";
 import { cn } from "../../../lib/utils";
-
-const STATS = [
-  { name: "Port Calls Activos", value: "3", icon: Ship, change: "+1 esta semana" },
-  { name: "Proformas Pendientes", value: "2", icon: FileText, change: "Vencen en 48h", highlight: true },
-  { name: "Buques Operando", value: "1", icon: Anchor, change: "Muelle 4" },
-];
+import { useAuth } from "../../../contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../../lib/firebase";
 
 export function NavieraDashboard() {
+  const { user } = useAuth();
+  const [portCalls, setPortCalls] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPortCalls = async () => {
+      if (!user) return;
+      try {
+        const q = query(
+          collection(db, "port_calls"),
+          where("userId", "==", user.id)
+        );
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sort explicitly by createdAt or any reasonable mechanism if timestamps exist
+        setPortCalls(data.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+      } catch (error) {
+        console.error("Error fetching port calls:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPortCalls();
+  }, [user]);
+
+  const actPortCalls = portCalls.filter(p => p.status !== "Completado").length;
+  const pendientes = portCalls.filter(p => p.status === "Programado").length;
+  const operando = portCalls.filter(p => p.status === "En Operación").length;
+
+  const STATS = [
+    { name: "Port Calls Activos", value: loading ? "-" : actPortCalls.toString(), icon: Ship, change: "Esta semana" },
+    { name: "Proformas Pendientes", value: loading ? "-" : pendientes.toString(), icon: FileText, change: "Vencen en 48h", highlight: pendientes > 0 },
+    { name: "Buques Operando", value: loading ? "-" : operando.toString(), icon: Anchor, change: "Muelle(s)" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
       <div className="mb-8">
@@ -39,20 +73,30 @@ export function NavieraDashboard() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-gray-100 pb-3">Escalas Recientes</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-[#0b1a2e]">MSC ALINA</p>
-                <p className="text-xs text-gray-500">Viaje: 1245A | Muelle 4</p>
-              </div>
-              <span className="bg-[#00A9CE]/10 text-[#00A9CE] px-3 py-1 rounded-full text-xs font-bold">En Operación</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-[#0b1a2e]">CMA CGM MAUPASSANT</p>
-                <p className="text-xs text-gray-500">Viaje: 8871B | En Rada</p>
-              </div>
-              <span className="bg-[#F7941D]/10 text-[#F7941D] px-3 py-1 rounded-full text-xs font-bold">Programado</span>
-            </div>
+            {loading ? (
+              <p className="text-sm text-gray-500 py-4 text-center">Cargando port calls...</p>
+            ) : portCalls.length === 0 ? (
+              <p className="text-sm text-gray-500 py-4 text-center">No hay escalas registradas</p>
+            ) : (
+              portCalls.slice(0, 5).map((call, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-[#0b1a2e]">{call.vesselName || "Buque Desconocido"}</p>
+                    <p className="text-xs text-gray-500">
+                      Viaje: {call.voyageNumber || "--"} | {call.location || "En Rada"}
+                    </p>
+                  </div>
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-xs font-bold",
+                    call.status === "En Operación" ? "bg-[#00A9CE]/10 text-[#00A9CE]" :
+                    call.status === "Programado" ? "bg-[#F7941D]/10 text-[#F7941D]" :
+                    "bg-gray-100 text-gray-600"
+                  )}>
+                    {call.status || "Pendiente"}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

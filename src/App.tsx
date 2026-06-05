@@ -33,6 +33,7 @@ import { B2BRegisterPage } from './pages/B2BRegisterPage';
 import { PortalIndexRoute } from './pages/portal/PortalIndexRoute';
 import { NavieraDashboard } from './pages/portal/roles/NavieraDashboard';
 import { ImportadorDashboard } from './pages/portal/roles/ImportadorDashboard';
+import { RoleGuard } from './components/RoleGuard';
 
 export default function App() {
   return (
@@ -75,21 +76,22 @@ export default function App() {
           <Route index element={<PortalIndexRoute />} />
           
           {/* Naviera */}
-          <Route path="naviera/dashboard" element={<NavieraDashboard />} />
-          <Route path="naviera/port-calls" element={<div className="p-8"><h2 className="text-xl font-bold">Port Calls</h2>Módulo Naviera en desarrollo</div>} />
-          <Route path="naviera/proformas" element={<div className="p-8"><h2 className="text-xl font-bold">Proformas</h2>Módulo Naviera en desarrollo</div>} />
+          <Route path="naviera/dashboard" element={<RoleGuard allowedRoles={['naviera']}><NavieraDashboard /></RoleGuard>} />
+          <Route path="naviera/port-calls" element={<RoleGuard allowedRoles={['naviera']}><div className="p-8"><h2 className="text-xl font-bold">Port Calls</h2>Módulo Naviera en desarrollo</div></RoleGuard>} />
+          <Route path="naviera/proformas" element={<RoleGuard allowedRoles={['naviera']}><div className="p-8"><h2 className="text-xl font-bold">Proformas</h2>Módulo Naviera en desarrollo</div></RoleGuard>} />
 
           {/* Importador */}
-          <Route path="importador/dashboard" element={<ImportadorDashboard />} />
-          <Route path="importador/tracking" element={<div className="p-8"><h2 className="text-xl font-bold">Trazabilidad AGD</h2>Módulo Importador en desarrollo</div>} />
-          <Route path="importador/retiros" element={<div className="p-8"><h2 className="text-xl font-bold">Retiros</h2>Módulo Importador en desarrollo</div>} />
+          <Route path="importador/dashboard" element={<RoleGuard allowedRoles={['importador']}><ImportadorDashboard /></RoleGuard>} />
+          <Route path="importador/tracking" element={<RoleGuard allowedRoles={['importador']}><div className="p-8"><h2 className="text-xl font-bold">Trazabilidad AGD</h2>Módulo Importador en desarrollo</div></RoleGuard>} />
+          <Route path="importador/retiros" element={<RoleGuard allowedRoles={['importador']}><div className="p-8"><h2 className="text-xl font-bold">Retiros</h2>Módulo Importador en desarrollo</div></RoleGuard>} />
 
-          {/* Fallback for other modules to prevent 404s */}
-          <Route path=":rol/dashboard" element={<div className="p-8"><h2 className="text-xl font-bold">Dashboard</h2>Módulo en desarrollo</div>} />
-          <Route path=":rol/:modulo" element={<div className="p-8"><h2 className="text-xl font-bold capitalize">Módulo B2B</h2>Vistas operativas en desarrollo</div>} />
-
-          {/* General */}
+          {/* General (accessible by anyone logged in) */}
           <Route path="suscripcion" element={<div className="p-8"><h2 className="text-xl font-bold">Mi Suscripción</h2>Configuración de plan y módulos</div>} />
+          
+          {/* Fallback for other modules to prevent 404s */}
+          <Route path=":rol/dashboard" element={<RoleGuard><div className="p-8"><h2 className="text-xl font-bold">Dashboard</h2>Módulo en desarrollo</div></RoleGuard>} />
+          <Route path=":rol/:modulo" element={<RoleGuard><div className="p-8"><h2 className="text-xl font-bold capitalize">Módulo B2B</h2>Vistas operativas en desarrollo</div></RoleGuard>} />
+
         </Route>
       </Routes>
     </BrowserRouter>

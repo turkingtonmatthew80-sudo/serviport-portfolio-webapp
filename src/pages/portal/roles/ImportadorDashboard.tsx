@@ -1,12 +1,43 @@
 import { Package, Search, Map, LayoutDashboard } from "lucide-react";
 import { cn } from "../../../lib/utils";
-
-const STATS = [
-  { name: "Contenedores en AGD", value: "24", icon: Package, change: "Trazabilidad activa" },
-  { name: "Retiros Disponibles", value: "8", icon: LayoutDashboard, change: "Listos para gate-out" },
-];
+import { useAuth } from "../../../contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../../lib/firebase";
 
 export function ImportadorDashboard() {
+  const { user } = useAuth();
+  const [containers, setContainers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContainers = async () => {
+      if (!user) return;
+      try {
+        const q = query(
+          collection(db, "contenedores"),
+          where("userId", "==", user.id)
+        );
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setContainers(data);
+      } catch (error) {
+        console.error("Error fetching containers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContainers();
+  }, [user]);
+
+  const activeContainers = containers.filter(c => c.status !== "Retirado").length;
+  const readyToWithdraw = containers.filter(c => c.status === "Disponible").length;
+
+  const STATS = [
+    { name: "Contenedores en AGD", value: loading ? "-" : activeContainers.toString(), icon: Package, change: "Trazabilidad activa" },
+    { name: "Retiros Disponibles", value: loading ? "-" : readyToWithdraw.toString(), icon: LayoutDashboard, change: "Listos para gate-out" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
       <div className="mb-8">
@@ -54,25 +85,36 @@ export function ImportadorDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {[
-                  { id: "MSCU1234567", type: "40'HC", loc: "Bloque B - F12 - N1", status: "Disponible", statusColor: "bg-green-100 text-green-700" },
-                  { id: "CMAU8765432", type: "20'DC", loc: "Bloque A - F02 - N2", status: "Inspección", statusColor: "bg-yellow-100 text-yellow-700" },
-                  { id: "HLXU4567890", type: "40'DC", loc: "Gate In", status: "En Muelle", statusColor: "bg-[#00A9CE]/20 text-[#00A9CE]" },
-                ].map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-[#0b1a2e]">{row.id}</td>
-                    <td className="px-6 py-4">{row.type}</td>
-                    <td className="px-6 py-4 font-mono text-xs">{row.loc}</td>
-                    <td className="px-6 py-4">
-                      <span className={cn("px-2.5 py-1 text-xs font-bold rounded-full", row.statusColor)}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-[#00A9CE] font-semibold hover:text-[#F7941D] transition-colors">Solicitar Retiro</button>
-                    </td>
-                  </tr>
-                ))}
+                {loading ? (
+                  <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">Cargando contenedores...</td></tr>
+                ) : containers.length === 0 ? (
+                  <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No hay contenedores registrados</td></tr>
+                ) : (
+                  containers.map((row, i) => {
+                    let statusColor = "bg-gray-100 text-gray-700";
+                    if (row.status === "Disponible") statusColor = "bg-green-100 text-green-700";
+                    if (row.status === "Inspección") statusColor = "bg-yellow-100 text-yellow-700";
+                    if (row.status === "En Muelle") statusColor = "bg-[#00A9CE]/20 text-[#00A9CE]";
+                    
+                    return (
+                      <tr key={i} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4 font-mono font-bold text-[#0b1a2e]">{row.containerId}</td>
+                        <td className="px-6 py-4">{row.type}</td>
+                        <td className="px-6 py-4 font-mono text-xs">{row.location || "N/A"}</td>
+                        <td className="px-6 py-4">
+                          <span className={cn("px-2.5 py-1 text-xs font-bold rounded-full", statusColor)}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button className="text-[#00A9CE] font-semibold hover:text-[#F7941D] transition-colors">
+                            Solicitar Retiro
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

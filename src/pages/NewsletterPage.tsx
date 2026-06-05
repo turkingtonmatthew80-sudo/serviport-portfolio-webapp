@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { ArrowRight, MailCheck, Bell, Newspaper } from "lucide-react";
+import { ArrowRight, MailCheck, Bell, Newspaper, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 export function NewsletterPage() {
   const [formData, setFormData] = useState({
@@ -15,10 +17,30 @@ export function NewsletterPage() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    
+    try {
+      await addDoc(collection(db, "newsletter_subscribers"), {
+        ...formData,
+        createdAt: new Date().toISOString()
+      });
+      setSubmitted(true);
+      setFormData({
+        name: "",
+        email: "",
+        company: "",
+        interests: { news: true, ops: false, regulatory: false }
+      });
+    } catch (error) {
+      console.error("Error subscribing to newsletter:", error);
+      alert("Hubo un error con la suscripción. Por favor intenta de nuevo.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCheckboxChange = (id: string) => {
@@ -54,7 +76,7 @@ export function NewsletterPage() {
               </div>
               <h2 className="text-3xl font-extrabold text-[#0b1a2e] mb-4">¡Suscripción Exitosa!</h2>
               <p className="text-gray-600 font-medium text-lg mb-8">
-                Gracias, {formData.name || 'usuario'}. Hemos registrado tu correo ({formData.email}) en nuestra base de datos. Pronto comenzarás a recibir nuestras actualizaciones.
+                Gracias. Hemos registrado tu correo en nuestra base de datos. Pronto comenzarás a recibir nuestras actualizaciones.
               </p>
               <button 
                 onClick={() => setSubmitted(false)}
@@ -125,9 +147,10 @@ export function NewsletterPage() {
               <div className="pt-6">
                 <button 
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-[#F7941D] text-white font-bold py-4 px-6 rounded-sm hover:bg-orange-500 transition-colors uppercase tracking-wider"
+                  disabled={isSubmitting}
+                  className="w-full flex items-center justify-center gap-2 bg-[#F7941D] text-white font-bold py-4 px-6 rounded-sm hover:bg-orange-500 transition-colors uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Confirmar Suscripción <ArrowRight size={20} />
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "Confirmar Suscripción"} <ArrowRight size={20} />
                 </button>
               </div>
               <p className="text-xs text-center text-gray-500 mt-4 leading-relaxed">

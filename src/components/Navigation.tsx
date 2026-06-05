@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { X, ChevronRight, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { GlobalSearch } from "./GlobalSearch";
 
-const megaMenuData = {
+export const megaMenuData = {
   nosotros: {
     title: "Nosotros",
     path: "/nosotros",
@@ -151,7 +152,8 @@ export function Navigation() {
         ))}
       </div>
       
-      <div className="px-4 md:px-6 flex items-center h-full">
+      <div className="px-4 md:px-6 flex items-center h-full gap-2 md:gap-4">
+        <GlobalSearch />
         <button onClick={() => navigate('/login')} className="bg-[#00A9CE] md:bg-[#0b1a2e] text-white px-4 md:px-6 py-2 md:py-2.5 rounded font-bold hover:bg-[#008EBF] md:hover:bg-slate-800 transition-colors shadow-sm text-xs md:text-sm whitespace-nowrap">
           PORTAL B2B
         </button>
