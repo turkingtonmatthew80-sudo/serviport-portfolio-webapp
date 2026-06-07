@@ -30,11 +30,17 @@ export function HeroSection() {
             style={{ y }}
             className="absolute -top-[15%] w-full h-[130%]"
           >
-            <iframe
-              src="https://player.vimeo.com/video/1197970936?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1"
-              className="absolute top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-h-full min-w-[177.77vh] -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-80"
-              allow="autoplay; fullscreen; picture-in-picture"
-            ></iframe>
+            <video 
+              muted 
+              autoPlay 
+              loop 
+              playsInline 
+              preload="auto" 
+              className="hero-video absolute top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-h-full min-w-[177.77vh] -translate-x-1/2 -translate-y-1/2 object-cover opacity-80 pointer-events-none"
+            >
+              <source src="https://vimeo.com/1199224337?share=copy&fl=sv&fe=ci" type="video/webm" />
+              <source src="https://player.vimeo.com/video/1197970936" type="video/mp4" />
+            </video>
             {/* Subtle dark overlay gradient to make text readable but keep video bright */}
             <div className="absolute inset-0 bg-[#0b1a2e]/20"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-[#0b1a2e]/80 via-[#0b1a2e]/40 to-transparent"></div>
@@ -60,20 +66,17 @@ export function HeroSection() {
               <span className="block text-[9vw] md:text-7xl lg:text-[6.5rem] text-white">
                 Logística <span className="text-[#F7941D]">Integral</span>
               </span>
-              <span className="block text-[5vw] md:text-4xl lg:text-[3rem] text-slate-300 tracking-normal font-bold">
-                en Venezuela
-              </span>
             </motion.h1>
             
-            <motion.p 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
               className="mb-4 md:mb-10 max-w-2xl drop-shadow-lg"
             >
-              <span className="text-[3.5vw] md:text-3xl text-[#00A9CE] font-bold block mb-2 md:mb-3 border-l-2 md:border-l-4 border-[#F7941D] pl-2 md:pl-4 bg-[#0b1a2e]/40 py-1 md:p-2 rounded-r-md w-fit">Tu carga, en manos expertas.</span>
-            </motion.p>
-            
+              <h2 className="text-[3.5vw] md:text-3xl text-[#00A9CE] font-bold block mb-2 md:mb-3 border-l-2 md:border-l-4 border-[#F7941D] pl-2 md:pl-4 bg-[#0b1a2e]/40 py-1 md:p-2 rounded-r-md w-fit">Tu carga, en manos expertas.</h2>
+            </motion.div>
+
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

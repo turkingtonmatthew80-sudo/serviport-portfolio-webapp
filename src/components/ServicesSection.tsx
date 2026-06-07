@@ -69,13 +69,13 @@ export function ServicesSection() {
   });
 
   return (
-    <section ref={containerRef} className="relative h-[300vh] bg-[#0b1a2e]">
-      <div className="sticky top-0 h-[100dvh] flex flex-col justify-center py-10 px-6 overflow-hidden">
+    <section ref={containerRef} className="relative h-[200vh] bg-[#0b1a2e]">
+      <div className="sticky top-0 min-h-screen flex flex-col justify-center py-4 lg:py-10 px-4 md:px-6 overflow-hidden">
         {/* Background Graphic */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#00A9CE]/5 blur-[120px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/4" />
         
-        <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center relative z-10">
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
+          <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center relative z-10">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-stretch pt-12 md:pt-16 lg:pt-0">
             {/* Text Content & Service List */}
             <div className="lg:w-7/12 w-full flex flex-col justify-center">
               <motion.div 
@@ -91,7 +91,7 @@ export function ServicesSection() {
                 <h2 className="text-2xl md:text-4xl lg:text-[2.75rem] font-extrabold text-white mb-3 md:mb-6 leading-[1.15]">
                   Nuestros Servicios
                 </h2>
-                <p className="text-gray-300 text-sm md:text-lg leading-relaxed mb-4 md:mb-6 pb-4 md:pb-6 border-b border-white/10">
+                <p className="text-gray-300 text-sm leading-relaxed mb-3 md:mb-5 pb-3 md:pb-5 border-b border-white/10">
                   Serviport es tu socio logístico ideal en Venezuela. Nuestro equipo de expertos brinda operaciones integrales desde la atención en muelle y estiba, hasta la administración del Almacén General de Depósito.
                 </p>
               </motion.div>
@@ -101,7 +101,7 @@ export function ServicesSection() {
                   <Link 
                     to={service.path}
                     key={idx} 
-                    className={`flex flex-col py-1.5 md:py-2 px-2 md:px-3 transition-all duration-300 cursor-pointer group rounded-lg ${
+                    className={`flex flex-col py-1 md:py-1.5 px-2 transition-all duration-300 cursor-pointer group rounded-lg ${
                       activeIndex === idx ? "bg-white/10 shadow-md border-l-4 border-[#00A9CE]" : "hover:bg-white/5 border-l-4 border-transparent"
                     }`}
                   >
@@ -117,11 +117,11 @@ export function ServicesSection() {
                       {activeIndex === idx && (
                         <motion.div
                           initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                          animate={{ opacity: 1, height: "auto", marginTop: 4 }}
+                          animate={{ opacity: 1, height: "auto", marginTop: 2 }}
                           exit={{ opacity: 0, height: 0, marginTop: 0 }}
                           className="overflow-hidden"
                         >
-                          <p className="text-slate-400 text-xs md:text-sm leading-snug md:leading-relaxed pl-[28px] md:pl-[30px] font-medium pr-2 md:pr-4">
+                          <p className="text-slate-400 text-xs leading-snug md:leading-relaxed pl-[28px] md:pl-[30px] font-medium pr-2">
                             {service.description}
                           </p>
                         </motion.div>
@@ -145,7 +145,7 @@ export function ServicesSection() {
             </div>
 
             {/* Dynamic Image Display */}
-            <div className="lg:w-5/12 w-full mt-4 md:mt-8 lg:mt-0 lg:h-auto h-[30vh] md:h-[40vh] min-h-[200px] md:min-h-[350px]">
+            <div className="lg:w-5/12 w-full mt-2 lg:mt-0 lg:h-auto h-[25vh] md:h-[35vh] min-h-[180px] md:min-h-[300px]">
               <div className="w-full h-full relative overflow-hidden rounded-xl shadow-2xl border border-white/10 group cursor-pointer transition-colors duration-500 hover:border-[#00A9CE]/50">
                 <AnimatePresence mode="wait">
                   <motion.img
@@ -164,7 +164,7 @@ export function ServicesSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0b1a2e] via-[#0b1a2e]/40 to-transparent opacity-90" />
                 
                 {/* Title Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 pb-8">
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 pb-4 md:pb-6">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeIndex}
@@ -173,8 +173,8 @@ export function ServicesSection() {
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ duration: 0.4 }}
                     >
-                      <div className="w-10 h-1.5 bg-[#00A9CE] mb-4" />
-                      <h3 className="text-balance text-2xl md:text-3xl font-extrabold text-white leading-tight drop-shadow-md">
+                      <div className="w-8 h-1 bg-[#00A9CE] mb-2" />
+                      <h3 className="text-balance text-xl md:text-2xl font-extrabold text-white leading-tight drop-shadow-md">
                         {services[activeIndex].title}
                       </h3>
                     </motion.div>
