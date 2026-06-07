@@ -186,9 +186,9 @@ export function AboutSection() {
   }, [containers.length]);
 
   return (
-    <section className="min-h-[100dvh] flex flex-col justify-center py-16 md:py-24 px-4 md:px-6 gap-y-12 bg-gray-50/50">
+    <section className="w-full flex flex-col justify-center py-6 md:py-10 px-4 md:px-6 gap-y-2 bg-gray-50/50 min-h-[auto] lg:min-h-[90vh]">
       <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center">
-        <div className="flex flex-col lg:flex-row justify-between gap-16 lg:gap-24 mb-16 items-center flex-1">
+        <div className="flex flex-col lg:flex-row justify-between gap-4 lg:gap-8 mb-4 items-center flex-1">
           {/* Left Content */}
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
@@ -197,19 +197,19 @@ export function AboutSection() {
             transition={{ duration: 0.6 }}
             className="lg:w-[50%] flex flex-col justify-center"
           >
-            <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm w-fit">
+            <div className="inline-block px-2 py-1 bg-[#00A9CE] text-white font-bold tracking-wider text-[10px] uppercase shadow-sm w-fit mb-2">
               Navegando Contigo Hacia el Éxito
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-[#0b1a2e] mb-6 leading-[1.15]">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-[#0b1a2e] mb-2 leading-[1.15]">
               Agenciamiento, estiba, almacenaje y transporte: su cadena logística asegurada de puerto a puerta
             </h2>
-            <p className="text-gray-600 text-lg leading-relaxed mb-10">
+            <p className="text-gray-600 text-sm leading-relaxed mb-4">
               En Serviport, brindamos servicios integrales de logística portuaria y agenciamiento naviero de buques desde o hacia Venezuela, enfocados en el crecimiento constante de nuestros clientes, trabajadores y aliados, cumpliendo con todas las leyes y regulaciones aplicables.
             </p>
 
-            <Link to="/nosotros" className="group bg-[#F7941D] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
+            <Link to="/nosotros" className="group bg-[#F7941D] text-white px-4 md:px-6 py-2 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-[#F7941D]/20 flex items-center justify-center gap-1 text-center text-xs uppercase tracking-wider w-fit">
               CONOCE MÁS SOBRE NOSOTROS
-              <motion.span className="inline-block transition-transform group-hover:translate-x-1"><ArrowRight size={20} strokeWidth={2.5} /></motion.span>
+              <motion.span className="inline-block transition-transform group-hover:translate-x-1"><ArrowRight size={16} strokeWidth={2.5} /></motion.span>
             </Link>
           </motion.div>
 
@@ -219,9 +219,9 @@ export function AboutSection() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="lg:w-[50%] flex perspective-1000 w-full max-w-xl mx-auto lg:mx-0"
+            className="lg:w-[50%] flex perspective-1000 w-full max-w-lg mx-auto lg:mx-0"
           >
-            <div className="w-full h-[400px] md:h-[480px] lg:h-[500px] shadow-2xl relative overflow-hidden rounded-sm group transform-gpu border border-black/10">
+            <div className="w-full h-[25vh] md:h-[35vh] lg:h-[40vh] min-h-[220px] shadow-2xl relative overflow-hidden rounded-sm group transform-gpu border border-black/10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}

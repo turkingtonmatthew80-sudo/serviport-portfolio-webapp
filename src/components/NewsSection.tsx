@@ -6,26 +6,26 @@ export function NewsSection() {
   const latestNews = newsData.slice(0, 4);
 
   return (
-    <section className="py-24 px-6 max-w-[1400px] mx-auto bg-gray-50/50">
+    <section className="py-8 md:py-12 px-4 md:px-6 w-full max-w-[1400px] mx-auto bg-gray-50/50 min-h-[auto] lg:min-h-[90vh] flex flex-col justify-center">
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.6 }}
-        className="flex justify-between items-end mb-12"
+        className="flex justify-between items-end mb-4 md:mb-8"
       >
         <div>
-          <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
+          <div className="inline-block px-2 py-1 bg-[#00A9CE] text-white font-bold tracking-wider text-[10px] mb-2 uppercase shadow-sm">
             Actualidad
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-[#0b1a2e] leading-[1.15]">Noticias Recientes</h2>
+          <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold text-[#0b1a2e] leading-[1.15]">Noticias Recientes</h2>
         </div>
-        <Link to="/noticias" className="hidden md:flex items-center gap-2 text-[#00A9CE] font-bold hover:text-[#008EBF] transition-colors uppercase tracking-wider text-sm">
-          VER TODAS LAS NOTICIAS <span>→</span>
+        <Link to="/noticias" className="hidden md:flex items-center gap-2 text-[#00A9CE] font-bold hover:text-[#008EBF] transition-colors uppercase tracking-wider text-xs">
+          VER TODAS <span>→</span>
         </Link>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 flex-1 max-h-[60vh]">
         {latestNews.map((item, idx) => (
           <motion.div
             key={item.id}

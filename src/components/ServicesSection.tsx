@@ -63,19 +63,21 @@ export function ServicesSection() {
     // Sometimes latest can be < 0 slightly on overscroll, so clamp to 0
     const clampedIndex = Math.max(0, index);
     
-    if (clampedIndex !== activeIndex) {
-      setActiveIndex(clampedIndex);
-    }
+    // Disable automatic scrolling update to avoid jumping, 
+    // we will rely on hover interactions as the primary driver.
+    // if (clampedIndex !== activeIndex) {
+    //   setActiveIndex(clampedIndex);
+    // }
   });
 
   return (
-    <section ref={containerRef} className="relative h-[200vh] bg-[#0b1a2e]">
-      <div className="sticky top-0 min-h-screen flex flex-col justify-center py-4 lg:py-10 px-4 md:px-6 overflow-hidden">
+    <section ref={containerRef} className="relative w-full bg-[#0b1a2e] py-6 md:py-10 min-h-[auto] lg:min-h-[90vh]">
+      <div className="flex flex-col justify-center px-4 md:px-6 overflow-hidden h-full">
         {/* Background Graphic */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#00A9CE]/5 blur-[120px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/4" />
         
           <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col justify-center relative z-10">
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-stretch pt-12 md:pt-16 lg:pt-0">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch pt-2">
             {/* Text Content & Service List */}
             <div className="lg:w-7/12 w-full flex flex-col justify-center">
               <motion.div 
@@ -101,7 +103,8 @@ export function ServicesSection() {
                   <Link 
                     to={service.path}
                     key={idx} 
-                    className={`flex flex-col py-1 md:py-1.5 px-2 transition-all duration-300 cursor-pointer group rounded-lg ${
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    className={`flex flex-col py-2 md:py-3 px-3 transition-all duration-300 cursor-pointer group rounded-lg ${
                       activeIndex === idx ? "bg-white/10 shadow-md border-l-4 border-[#00A9CE]" : "hover:bg-white/5 border-l-4 border-transparent"
                     }`}
                   >
@@ -145,7 +148,7 @@ export function ServicesSection() {
             </div>
 
             {/* Dynamic Image Display */}
-            <div className="lg:w-5/12 w-full mt-2 lg:mt-0 lg:h-auto h-[25vh] md:h-[35vh] min-h-[180px] md:min-h-[300px]">
+            <div className="lg:w-5/12 w-full mt-4 lg:mt-0 lg:h-auto h-[30vh] md:h-[40vh] min-h-[200px]">
               <div className="w-full h-full relative overflow-hidden rounded-xl shadow-2xl border border-white/10 group cursor-pointer transition-colors duration-500 hover:border-[#00A9CE]/50">
                 <AnimatePresence mode="wait">
                   <motion.img

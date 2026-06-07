@@ -38,27 +38,24 @@ export function FAQSection() {
   };
 
   return (
-    <section className="bg-slate-50 py-20 px-6 border-t border-gray-200" id="faq">
-      <div className="max-w-4xl mx-auto">
+    <section className="bg-slate-50 py-8 md:py-12 px-4 md:px-6 border-t border-gray-200 min-h-[auto] lg:min-h-[90vh] flex flex-col justify-center" id="faq">
+      <div className="max-w-4xl mx-auto w-full flex flex-col pt-8">
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center text-center mb-12"
+          className="flex flex-col items-center text-center mb-4 md:mb-8 shrink-0"
         >
-          <div className="inline-block px-3 py-1.5 bg-[#00A9CE] text-white font-bold tracking-wider text-xs mb-3 uppercase shadow-sm">
+          <div className="inline-block px-2 py-1 bg-[#00A9CE] text-white font-bold tracking-wider text-[10px] mb-2 uppercase shadow-sm">
             Soporte y Dudas
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-[#0b1a2e] mb-6 leading-[1.15]">
+          <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold text-[#0b1a2e] mb-2 leading-[1.15]">
             Preguntas Frecuentes
           </h2>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto leading-relaxed mb-10">
-            Resuelve tus dudas rápidamente sobre nuestras operativas, coberturas y gestión aduanera de nuestros servicios logísticos portuarios.
-          </p>
         </motion.div>
 
-        <div className="space-y-4">
+        <div className="space-y-2 md:space-y-3 flex-1">
           {faqs.map((faq, index) => (
             <motion.div 
               key={index}
@@ -66,22 +63,22 @@ export function FAQSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-white border rounded-sm transition-all duration-300 ${openIndex === index ? 'border-[#00A9CE] shadow-md' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
+              className={`bg-white border rounded-sm transition-all duration-300 shrink-0 ${openIndex === index ? 'border-[#00A9CE] shadow-md' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}
             >
               <button
-                className="w-full flex items-center justify-between p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A9CE]"
+                className="w-full flex items-center justify-between p-4 md:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A9CE]"
                 onClick={() => toggleFAQ(index)}
                 aria-expanded={openIndex === index}
               >
-                <span className={`text-lg font-bold pr-8 transition-colors ${openIndex === index ? 'text-[#0b1a2e]' : 'text-gray-700'}`}>
+                <span className={`text-sm md:text-base font-bold pr-4 transition-colors ${openIndex === index ? 'text-[#0b1a2e]' : 'text-gray-700'}`}>
                   {faq.question}
                 </span>
-                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${openIndex === index ? 'bg-[#00A9CE]/10 text-[#00A9CE]' : 'bg-gray-100 text-gray-400'}`}>
+                <div className={`shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-colors ${openIndex === index ? 'bg-[#00A9CE]/10 text-[#00A9CE]' : 'bg-gray-100 text-gray-400'}`}>
                   <motion.div
                     animate={{ rotate: openIndex === index ? 180 : 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <ChevronDown size={20} />
+                    <ChevronDown className="w-4 h-4 md:w-5 md:h-5" />
                   </motion.div>
                 </div>
               </button>
@@ -94,7 +91,7 @@ export function FAQSection() {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
-                    <div className="p-6 pt-0 text-gray-600 leading-relaxed border-t border-gray-100/50 mt-2">
+                    <div className="p-4 md:p-6 pt-0 text-gray-600 leading-relaxed border-t border-gray-100/50 mt-2 text-xs md:text-sm">
                        {faq.answer}
                     </div>
                   </motion.div>
@@ -109,10 +106,10 @@ export function FAQSection() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-12 text-center flex flex-col items-center"
+          className="mt-8 text-center flex flex-col items-center"
         >
-           <p className="text-gray-600 mb-6 font-medium text-lg">¿Aún tienes dudas adicionales?</p>
-           <Link to="/contacto" className="group bg-[#0b1a2e] text-white px-8 md:px-10 py-4 rounded font-bold hover:bg-slate-800 transition-colors shadow-lg flex items-center justify-center gap-3 text-center text-sm md:text-base uppercase tracking-wider w-fit">
+           <p className="text-gray-600 mb-4 font-medium text-sm md:text-base">¿Aún tienes dudas adicionales?</p>
+           <Link to="/contacto" className="group bg-[#0b1a2e] text-white px-6 md:px-8 py-3 rounded font-bold hover:bg-slate-800 transition-colors shadow-lg flex items-center justify-center gap-2 text-center text-xs md:text-sm uppercase tracking-wider w-fit">
               IR A LA SECCIÓN DE CONTACTO
            </Link>
         </motion.div>

@@ -23,8 +23,8 @@ export function HeroSection() {
   const y = useTransform(scrollY, [0, 1000], [0, 250]);
 
   return (
-    <section className="w-full flex flex-col bg-[#0b1424]">
-      <div className="relative w-full aspect-video flex flex-col justify-center overflow-hidden">
+    <section className="w-full flex flex-col bg-[#0b1424] h-[calc(100vh-5rem)] max-h-[100vh] min-h-[500px]">
+      <div className="relative w-full flex-1 flex flex-col justify-center overflow-hidden">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <motion.div 
             style={{ y }}
@@ -38,7 +38,7 @@ export function HeroSection() {
               preload="auto" 
               className="hero-video absolute top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-h-full min-w-[177.77vh] -translate-x-1/2 -translate-y-1/2 object-cover opacity-80 pointer-events-none"
             >
-              <source src="https://vimeo.com/1199224337?share=copy&fl=sv&fe=ci" type="video/webm" />
+              <source src="/hero-video.webm" type="video/webm" />
               <source src="https://player.vimeo.com/video/1197970936" type="video/mp4" />
             </video>
             {/* Subtle dark overlay gradient to make text readable but keep video bright */}
@@ -52,18 +52,18 @@ export function HeroSection() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="max-w-4xl text-white pt-10 pb-4 md:py-0"
+            className="max-w-[100%] text-white pt-2 md:pt-6 pb-2 md:pb-4"
           >
             <motion.h1 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="font-black leading-[1.05] tracking-tight mb-2 md:mb-6 drop-shadow-xl"
+              className="font-black leading-[1.05] tracking-tight mb-2 md:mb-5 drop-shadow-xl"
             >
-              <span className="block text-[5vw] md:text-4xl lg:text-[3rem] text-slate-200 mb-1 tracking-normal font-bold">
+              <span className="block text-[clamp(2rem,6vw,3.5rem)] text-slate-200 mb-1 tracking-normal font-bold">
                 Soluciones de
               </span>
-              <span className="block text-[9vw] md:text-7xl lg:text-[6.5rem] text-white">
+              <span className="block text-[clamp(3.5rem,10vw,7rem)] text-white">
                 Logística <span className="text-[#F7941D]">Integral</span>
               </span>
             </motion.h1>
@@ -72,9 +72,9 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mb-4 md:mb-10 max-w-2xl drop-shadow-lg"
+              className="mb-4 md:mb-8 max-w-2xl drop-shadow-lg"
             >
-              <h2 className="text-[3.5vw] md:text-3xl text-[#00A9CE] font-bold block mb-2 md:mb-3 border-l-2 md:border-l-4 border-[#F7941D] pl-2 md:pl-4 bg-[#0b1a2e]/40 py-1 md:p-2 rounded-r-md w-fit">Tu carga, en manos expertas.</h2>
+              <h2 className="text-[clamp(1.2rem,3vw,2rem)] text-[#00A9CE] font-bold block mb-2 md:mb-3 border-l-2 md:border-l-4 border-[#F7941D] pl-2 md:pl-4 bg-[#0b1a2e]/40 py-1 md:p-2 rounded-r-md w-fit">Tu carga, en manos expertas.</h2>
             </motion.div>
 
             <motion.div 
@@ -100,8 +100,8 @@ export function HeroSection() {
       </div>
 
       {/* Trust Bar */}
-      <div className="w-full bg-[#0b1424] relative z-20 shrink-0 border-t border-white/5">
-        <div className="max-w-[1400px] mx-auto px-2 md:px-6 py-6 md:py-12">
+      <div className="w-full bg-[#0b1424] relative z-20 shrink-0 border-t border-white/5 py-4 md:py-6 lg:py-8">
+        <div className="max-w-[1400px] mx-auto px-2 md:px-6">
           <div className="grid grid-cols-4 gap-2 md:gap-8">
             {[
               { icon: Anchor, value: 2, suffix: "", label: "Puertos" },
@@ -119,15 +119,15 @@ export function HeroSection() {
               >
                 <motion.div
                   whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-10 h-10 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#00A9CE]/10 flex items-center justify-center mb-3 md:mb-6 group-hover:bg-[#00A9CE]/20 transition-colors border border-[#00A9CE]/20 group-hover:border-[#F7941D]/30"
+                  className="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-[#00A9CE]/10 flex items-center justify-center mb-1 md:mb-3 group-hover:bg-[#00A9CE]/20 transition-colors border border-[#00A9CE]/20 group-hover:border-[#F7941D]/30"
                 >
-                  <stat.icon className="w-5 h-5 md:w-7 md:h-7 text-[#00A9CE] group-hover:text-[#F7941D] transition-colors" strokeWidth={2} />
+                  <stat.icon className="w-4 h-4 md:w-6 md:h-6 text-[#00A9CE] group-hover:text-[#F7941D] transition-colors" strokeWidth={2} />
                 </motion.div>
-                <div className="text-2xl md:text-5xl font-black text-white mb-1 md:mb-2 tracking-tight drop-shadow-md flex items-center justify-center">
+                <div className="text-[clamp(1.5rem,4vw,3.5rem)] font-black text-white mb-0.5 md:mb-2 tracking-tight drop-shadow-md flex items-center justify-center leading-none">
                   <Counter to={stat.value} />
-                  {stat.suffix && <span className="text-[#F7941D] ml-1">{stat.suffix}</span>}
+                  {stat.suffix && <span className="text-[#F7941D] ml-0.5 md:ml-1">{stat.suffix}</span>}
                 </div>
-                <span className="text-[10px] md:text-sm text-slate-400 font-bold tracking-tight md:tracking-widest uppercase mt-1 md:mt-2 group-hover:text-slate-300 transition-colors leading-tight break-words">
+                <span className="text-[clamp(0.6rem,1vw,0.875rem)] text-slate-400 font-bold tracking-tight md:tracking-widest uppercase md:mt-1 group-hover:text-slate-300 transition-colors leading-tight break-words">
                   {stat.label}
                 </span>
               </motion.div>
