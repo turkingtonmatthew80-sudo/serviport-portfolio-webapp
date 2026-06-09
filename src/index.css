@@ -1,12 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,400;1,700&family=Sansita:ital,wght@0,400;0,700;0,800;0,900;1,400;1,700&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sansita: "Sansita", ui-serif, Georgia, serif;
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-secondary-dark: var(--secondary-dark);
+  --color-accent: var(--accent);
+  --color-background: var(--background);
+  --color-background-muted: var(--background-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border: var(--border-color);
 }
 
 @layer base {
+  :root {
+    --primary: #00A9CE;
+    --primary-dark: #008eac;
+    --secondary: #0b1a2e;
+    --secondary-dark: #0b1424;
+    --accent: #F7941D;
+    --background: #ffffff;
+    --background-muted: #f8fafc;
+    --foreground: #0f172a;
+    --foreground-muted: #475569;
+    --border-color: #f1f5f9;
+  }
+
+  .dark {
+    --primary: #00A9CE;
+    --primary-dark: #008eac;
+    --secondary: #1e293b; 
+    --secondary-dark: #0f172a;
+    --accent: #F7941D;
+    --background: #0b1424;
+    --background-muted: #132036;
+    --foreground: #f8fafc;
+    --foreground-muted: #94a3b8;
+    --border-color: #1e293b;
+  }
+
   *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -15,6 +53,8 @@
   body {
     min-height: 100vh;
     overflow-x: hidden;
+    background-color: var(--background);
+    color: var(--foreground);
   }
   #root {
     width: 100%;

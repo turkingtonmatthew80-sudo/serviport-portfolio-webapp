@@ -1,19 +1,34 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import React, { createContext, useContext, useState, useEffect } from "react";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
   sendEmailVerification,
   signInWithPopup,
   GoogleAuthProvider,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
+  User as FirebaseUser,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { auth, db, handleFirestoreError, OperationType } from "../lib/firebase";
 
-export type RoleId = 'naviera' | 'armador' | 'importador' | 'exportador' | 'agente_aduana' | 'transportista';
+export type RoleId =
+  | "naviera"
+  | "armador"
+  | "importador"
+  | "exportador"
+  | "agente_aduana"
+  | "transportista";
 
 export interface User {
   id: string;
@@ -28,8 +43,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   checkIfUserExists: (email: string) => Promise<boolean>;
-  register: (user: Omit<User, 'id'>, password: string) => Promise<boolean>;
-  registerGoogleUser: (user: Omit<User, 'id'>) => Promise<boolean>;
+  register: (user: Omit<User, "id">, password: string) => Promise<boolean>;
+  registerGoogleUser: (user: Omit<User, "id">) => Promise<boolean>;
   resetPassword: (email: string) => Promise<boolean>;
   logout: () => void;
   deleteAccount: () => Promise<boolean>;
@@ -43,54 +58,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        if (!firebaseUser.emailVerified) {
-          console.warn("User email not verified. Rejecting session.");
-          await signOut(auth);
-          setUser(null);
-          setIsLoading(false);
-          return;
-        }
+    const unsub = onAuthStateChanged(
+      auth,
+      async (firebaseUser: FirebaseUser | null) => {
+        if (firebaseUser) {
+          if (!firebaseUser.emailVerified) {
+            console.warn("User email not verified. Rejecting session.");
+            await signOut(auth);
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
 
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setUser({
-              id: firebaseUser.uid,
-              razonSocial: data.razonSocial || '',
-              email: data.email || firebaseUser.email || '',
-              rif: data.rif || '',
-              roles: data.roles || [],
-            });
-          } else {
-            console.warn("User document not found in Firestore. Strict security requires it.");
-            // Do not aggressively sign out here, because the B2BRegisterPage Google autofill 
-            // relies on the Firebase user session being active to create the document in step 3.
+          try {
+            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              setUser({
+                id: firebaseUser.uid,
+                razonSocial: data.razonSocial || "",
+                email: data.email || firebaseUser.email || "",
+                rif: data.rif || "",
+                roles: data.roles || [],
+              });
+            } else {
+              console.warn(
+                "User document not found in Firestore. Strict security requires it.",
+              );
+              // Do not aggressively sign out here, because the B2BRegisterPage Google autofill
+              // relies on the Firebase user session being active to create the document in step 3.
+              setUser(null);
+            }
+          } catch (error: any) {
+            console.warn("Failed to fetch user doc from Firestore:", error);
+            if (
+              error.code === "unavailable" ||
+              error.message?.includes("offline")
+            ) {
+              console.error(
+                "Firestore is offline or not enabled. Auth is blocked to maintain security.",
+              );
+            }
+            await signOut(auth);
             setUser(null);
           }
-        } catch (error: any) {
-          console.warn("Failed to fetch user doc from Firestore:", error);
-          if (error.code === 'unavailable' || error.message?.includes('offline')) {
-             console.error("Firestore is offline or not enabled. Auth is blocked to maintain security.");
-          }
-          await signOut(auth);
+        } else {
           setUser(null);
         }
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-    
+        setIsLoading(false);
+      },
+    );
+
     return () => unsub();
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+
       if (!userCredential.user.emailVerified) {
         console.warn("User attempted login with unverified email.");
         await signOut(auth);
@@ -99,15 +128,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Verify user document exists
       try {
-        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+        const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
         if (!userDoc.exists()) {
-          console.warn('User authenticated but not found in Firestore DB. Blocking access.');
+          console.warn(
+            "User authenticated but not found in Firestore DB. Blocking access.",
+          );
           await signOut(auth);
           throw new Error("auth/user-not-registered");
         }
       } catch (err: any) {
         if (err.message === "auth/user-not-registered") throw err;
-        console.warn('Could not verify user doc in Firestore:', err.message || err);
+        console.warn(
+          "Could not verify user doc in Firestore:",
+          err.message || err,
+        );
         await signOut(auth);
         throw new Error("auth/database-error");
       }
@@ -120,23 +154,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+    provider.setCustomParameters({ prompt: "select_account" });
     try {
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
-      
+
       try {
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
         if (!userDoc.exists()) {
           // Si el UID no se encuentra en users, tal vez haya un documento con ese email (creado vía registro si usa firebase Auth pero UID cambia?)
           // Normalmente si usas Google Auth en un correo que ya tenía Email/Pass, Firebase Auth linkea las cuentas (si 'Account linking' está habilitado por email)
-          const existsByEmail = await checkIfUserExists(firebaseUser.email || '');
+          const existsByEmail = await checkIfUserExists(
+            firebaseUser.email || "",
+          );
           if (!existsByEmail) {
             console.warn("User not registered in db. Google login rejected.");
             await firebaseUser.delete().catch(() => signOut(auth)); // Try deleting the newly created Auth user, or sign out
             throw new Error("auth/user-not-registered");
           } else {
-            console.warn("User document doesn't match UID, but email exists. You may need to merge accounts in Firebase.");
+            console.warn(
+              "User document doesn't match UID, but email exists. You may need to merge accounts in Firebase.",
+            );
             // Si el correo existe en BD bajo otro UID, pero Firebase Auth lo dejó pasar
             // por ahora cerramos sesión para no dar acceso si no coincide el ref doc
             await signOut(auth);
@@ -145,13 +183,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (dbErr: any) {
         if (dbErr.message === "auth/user-not-registered") throw dbErr;
-        console.warn('Could not verify user doc in Firestore during Google Auth:', dbErr.message || dbErr);
+        console.warn(
+          "Could not verify user doc in Firestore during Google Auth:",
+          dbErr.message || dbErr,
+        );
         await signOut(auth);
         throw new Error("auth/database-error");
       }
       return true;
     } catch (error: any) {
-      if (error.message !== "auth/user-not-registered" && error.code !== "auth/user-not-registered") {
+      if (
+        error.message !== "auth/user-not-registered" &&
+        error.code !== "auth/user-not-registered"
+      ) {
         console.error("Google Auth failed:", error);
       }
       throw error;
@@ -161,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkIfUserExists = async (email: string) => {
     if (!email) return false;
     try {
-      const q = query(collection(db, 'users'), where('email', '==', email));
+      const q = query(collection(db, "users"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
     } catch (error) {
@@ -170,21 +214,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (newUser: Omit<User, 'id'>, password: string) => {
+  const register = async (newUser: Omit<User, "id">, password: string) => {
     try {
       const exists = await checkIfUserExists(newUser.email);
       if (exists) {
         throw new Error("auth/email-already-in-use");
       }
-      const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        newUser.email,
+        password,
+      );
       const uid = userCredential.user.uid;
-      
+
       try {
         await sendEmailVerification(userCredential.user);
       } catch (err) {
         console.error("Could not send verification email", err);
       }
-      
+
       const firestoreUser = {
         email: newUser.email,
         razonSocial: newUser.razonSocial,
@@ -193,9 +241,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       try {
-        await setDoc(doc(db, 'users', uid), firestoreUser);
+        await setDoc(doc(db, "users", uid), firestoreUser);
       } catch (error: any) {
-        console.warn("Could not write user to db initially, but auth user was created:", error);
+        console.warn(
+          "Could not write user to db initially, but auth user was created:",
+          error,
+        );
       }
 
       // Since email verification is required, sign them out immediately after registration
@@ -208,10 +259,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const registerGoogleUser = async (newUser: Omit<User, 'id'>) => {
+  const registerGoogleUser = async (newUser: Omit<User, "id">) => {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) throw new Error("No Google user session found.");
-    
+
     // We assume email is verified for Google Auth, or we can send verification if needed.
     const firestoreUser = {
       email: newUser.email,
@@ -221,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      await setDoc(doc(db, 'users', firebaseUser.uid), firestoreUser);
+      await setDoc(doc(db, "users", firebaseUser.uid), firestoreUser);
     } catch (error: any) {
       console.warn("Could not write user to db:", error);
       throw error;
@@ -245,7 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!firebaseUser) throw new Error("No user session found.");
 
     try {
-      await deleteDoc(doc(db, 'users', firebaseUser.uid));
+      await deleteDoc(doc(db, "users", firebaseUser.uid));
       await firebaseUser.delete();
       setUser(null);
       return true;
@@ -266,7 +317,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, checkIfUserExists, register, registerGoogleUser, resetPassword, logout, deleteAccount, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        loginWithGoogle,
+        checkIfUserExists,
+        register,
+        registerGoogleUser,
+        resetPassword,
+        logout,
+        deleteAccount,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -275,8 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
-

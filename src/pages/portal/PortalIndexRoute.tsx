@@ -13,12 +13,12 @@ export function PortalIndexRoute() {
         const role = user.roles[0];
         // We will map 'importador' to 'importador', 'agente_aduana' to 'aduana', etc.
         const pathMap: Record<string, string> = {
-          naviera: 'naviera',
-          armador: 'armador',
-          importador: 'importador',
-          exportador: 'exportador',
-          agente_aduana: 'aduana',
-          transportista: 'transportista'
+          naviera: "naviera",
+          armador: "armador",
+          importador: "importador",
+          exportador: "exportador",
+          agente_aduana: "aduana",
+          transportista: "transportista",
         };
         const basePath = pathMap[role] || role;
         navigate(`/portal/${basePath}/dashboard`, { replace: true });
@@ -29,5 +29,7 @@ export function PortalIndexRoute() {
     }
   }, [user, isLoading, navigate]);
 
-  return <div className="p-8 text-center text-gray-500">Cargando módulos...</div>;
+  return (
+    <div className="p-8 text-center text-foreground-muted">Cargando módulos...</div>
+  );
 }
