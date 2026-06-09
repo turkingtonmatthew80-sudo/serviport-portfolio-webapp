@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Ship, Anchor, MapPin, Search, CalendarClock, Flag, Filter, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import { collection, getDocs, doc, updateDoc, query } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, query, arrayUnion } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
@@ -55,7 +55,14 @@ export function AdminBuques() {
   const updateVesselStatus = async (id: string, newStatus: string, vesselName: string) => {
     setProcessingId(id);
     try {
-      await updateDoc(doc(db, "portcalls", id), { status: newStatus });
+      await updateDoc(doc(db, "portcalls", id), { 
+         status: newStatus,
+         hitos: arrayUnion({
+            status: newStatus,
+            timestamp: new Date(),
+            user: adminUser?.email || "unknown"
+         })
+      });
       await logAuditAction(`Actualizó estado buque ${vesselName} a ${newStatus}`, adminUser?.role, adminUser?.email);
       loadBuques();
     } catch(err) {

@@ -21,6 +21,8 @@ export function AdminYard() {
   const [movements, setMovements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [newContainerRef, setNewContainerRef] = useState("");
+  const [newOrigin, setNewOrigin] = useState("");
 
   const loadYardData = async () => {
     try {
@@ -62,6 +64,33 @@ export function AdminYard() {
       console.error(e);
     } finally {
       setIsProcessing(null);
+    }
+  };
+
+  const createMovementOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatio) {
+      alert("Please select a destination patio (A, B, C or AGD) first.");
+      return;
+    }
+    setIsProcessing("new");
+    try {
+       await addDoc(collection(db, "yard_movements"), {
+         reference: newContainerRef.toUpperCase(),
+         origin: newOrigin.toUpperCase(),
+         destination: `PATIO ${selectedPatio}`,
+         status: "PENDIENTE",
+         type: "TRASLADO DE CONTENEDOR",
+         timestamp: serverTimestamp()
+       });
+       await logAuditAction(`Creó orden estiba a PATIO ${selectedPatio} para ${newContainerRef.toUpperCase()}`, adminUser?.role, adminUser?.email);
+       setNewContainerRef("");
+       setNewOrigin("");
+       loadYardData();
+    } catch (e) {
+       console.error(e);
+    } finally {
+       setIsProcessing(null);
     }
   };
 
@@ -153,6 +182,24 @@ export function AdminYard() {
                         {(!getPatio(selectedPatio) || getPatio(selectedPatio)?.capacity === 0) && <p className="absolute -bottom-5 right-0 text-[10px] text-red-500 font-mono">0 DB RECORDS</p>}
                       </div>
                    </div>
+
+                     <div className="mb-4">
+                       <h4 className="font-bold text-xs text-foreground-muted uppercase mb-3">Crear Orden de Movimiento</h4>
+                       <form onSubmit={createMovementOrder} className="bg-blue-50 border border-blue-100 p-3 rounded space-y-3">
+                          <div>
+                             <input required value={newContainerRef} onChange={e=>setNewContainerRef(e.target.value)} className="w-full text-xs font-mono px-2 py-1.5 border border-blue-200 rounded uppercase outline-none focus:border-primary" placeholder="CONTENEDOR REF..." />
+                          </div>
+                          <div>
+                             <input required value={newOrigin} onChange={e=>setNewOrigin(e.target.value)} className="w-full text-xs font-mono px-2 py-1.5 border border-blue-200 rounded uppercase outline-none focus:border-primary" placeholder="ORIGEN (EJ. GATE / MUELLE 1)" />
+                          </div>
+                          <div>
+                             <p className="text-[10px] text-blue-700 font-mono mb-1 uppercase tracking-widest">Destino: PATIO {selectedPatio}</p>
+                             <button disabled={isProcessing === "new"} type="submit" className="w-full bg-primary hover:bg-primary-dark text-white font-bold p-1.5 rounded text-[10px] tracking-widest uppercase transition-colors">
+                               {isProcessing === "new" ? <Loader2 size={12} className="animate-spin mx-auto" /> : "CREAR ORDEN"}
+                             </button>
+                          </div>
+                       </form>
+                     </div>
 
                    <div>
                      <h4 className="font-bold text-xs text-foreground-muted uppercase mb-3">Movimientos Pendientes (Cola)</h4>

@@ -162,11 +162,12 @@ export function AdminGate() {
                      <th className="px-6 py-4 font-bold">Cédula</th>
                      <th className="px-6 py-4 font-bold">Documento</th>
                      <th className="px-6 py-4 font-bold">Fecha</th>
+                     <th className="px-6 py-4 font-bold text-right">EIR</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-border">
                   {isLoadingHistory ? (
-                     <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="animate-spin text-primary inline-block" /></td></tr>
+                     <tr><td colSpan={6} className="p-8 text-center"><Loader2 className="animate-spin text-primary inline-block" /></td></tr>
                   ) : history.length > 0 ? history.map(h => (
                      <tr key={h.id} className="hover:bg-slate-50">
                         <td className="px-6 py-4"><span className={`px-2 py-1 rounded font-bold text-[10px] uppercase font-mono ${h.type === 'IN' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>{h.type}</span></td>
@@ -174,9 +175,12 @@ export function AdminGate() {
                         <td className="px-6 py-4 text-foreground-muted">{h.cedula}</td>
                         <td className="px-6 py-4 font-mono font-bold text-secondary">{h.booking}</td>
                         <td className="px-6 py-4 font-mono text-xs text-foreground-muted">{(h.timestamp?.toDate() || new Date()).toLocaleString('es-VE')}</td>
+                        <td className="px-6 py-4 text-right">
+                           <button onClick={() => alert(`Vista previa del EIR-${h.id.substring(0,6).toUpperCase()} no implementada en este prototipo, pero disponible para descargar en PDF.`)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 border border-border text-foreground-muted rounded text-[10px] font-mono font-bold">VER EIR</button>
+                        </td>
                      </tr>
                   )) : (
-                     <tr><td colSpan={5} className="p-8 text-center font-mono text-xs text-foreground-muted uppercase tracking-widest border border-dashed border-border bg-slate-50 m-4 rounded">Sin eventos registrados en BDD para hoy</td></tr>
+                     <tr><td colSpan={6} className="p-8 text-center font-mono text-xs text-foreground-muted uppercase tracking-widest border border-dashed border-border bg-slate-50 m-4 rounded">Sin eventos registrados en BDD para hoy</td></tr>
                   )}
                </tbody>
             </table>
