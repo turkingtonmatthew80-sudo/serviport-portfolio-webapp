@@ -90,13 +90,12 @@ export function FooterSection() {
             >
               Login Portal B2B
             </Link>
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
+            <Link
+              to="/admin-login"
               className="flex items-center justify-between border border-slate-600 hover:border-primary hover:text-primary px-4 py-3 rounded text-center font-bold transition-all duration-300"
             >
               Sistema Administrativo
-            </a>
+            </Link>
           </div>
 
           {/* Col 4: Newsletter */}
@@ -115,7 +114,7 @@ export function FooterSection() {
         </div>
 
         {/* Bottom strip */}
-        <div className="max-w-[1260px] mx-auto px-6 mt-20 pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
+        <div className="max-w-[1260px] mx-auto px-4 md:px-6 mt-20 pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
           <p>
             © 2026 Serviport Agentes Navieros C.A. - Sitio web desarrollado por{" "}
             <a
