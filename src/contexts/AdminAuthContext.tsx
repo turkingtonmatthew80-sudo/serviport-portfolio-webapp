@@ -14,6 +14,7 @@ export type Role =
 export interface AdminUser {
   id: string; // Internal username
   name: string;
+  email: string;
   role: Role;
 }
 
@@ -48,6 +49,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const u: AdminUser = {
         id: "superadmin_id",
         name: "Admin Sistema",
+        email: "admin@serviport.local",
         role: "SUPERADMIN",
       };
       setAdminUser(u);
@@ -86,6 +88,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const u: AdminUser = {
       id: employeeData.id,
       name: employeeData.name,
+      email: employeeData.email || "",
       role: employeeData.role as Role,
     };
 

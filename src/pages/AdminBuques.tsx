@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Ship, Anchor, MapPin, Search, CalendarClock, Flag, Filter, Loader2 } from "lucide-react";
+import { Ship, Anchor, MapPin, Search, CalendarClock, Flag, Filter, Loader2, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { collection, getDocs, doc, updateDoc, query, arrayUnion } from "firebase/firestore";
 import { db } from "../lib/firebase";

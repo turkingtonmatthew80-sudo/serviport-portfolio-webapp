@@ -116,74 +116,75 @@ async function startServer() {
 
       if (req.body.forceScrape) {
         try {
-          const FirecrawlApp = (await import("@mendable/firecrawl-js")).default;
-          const firecrawlKey = process.env.FIRECRAWL_API_KEY || "fc-edb4bd8df62049e1b9a0538f1358030a";
-          const fc = new FirecrawlApp({ apiKey: firecrawlKey });
-          
-          console.log(`Forcing Firecrawl scrape for port: ${port}`);
-          
-          const schema = {
-            type: "object",
-            properties: {
-              ships: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    shipName: { type: "string" },
-                    originPort: { type: "string" },
-                    destinationPort: { type: "string" },
-                    originLat: { type: "number" },
-                    originLng: { type: "number" },
-                    destinationLat: { type: "number" },
-                    destinationLng: { type: "number" },
-                    type: { type: "string", enum: ["import", "export"] }
-                  },
-                  required: ["shipName", "originLat", "originLng", "destinationLat", "destinationLng", "type"]
-                }
-              }
-            },
-            required: ["ships"]
-          };
-
-          const myShipTrackingUrls: Record<string, string> = {
-            "Puerto Cabello": "https://www.myshiptracking.com/ports/port-of-puerto-cabello-in-ve-venezuela-id-6886",
-            "La Guaira": "https://www.myshiptracking.com/ports/-of-la-guaira-in--id-6875",
-            "Maracaibo": "https://www.myshiptracking.com/ports/-of-maracaibo-in--id-6885",
-            "Guanta": "https://www.myshiptracking.com/ports/-of-guanta-in--id-6890"
-          };
-          
-          const portUrl = myShipTrackingUrls[port] || `https://www.myshiptracking.com/ports/${encodeURIComponent(port.toLowerCase().replace(/ /g, '-'))}`;
-
-          const extractResult = await fc.extract({
-            urls: [
-              portUrl
-            ],
-            prompt: `Extract recent or historical cargo ships and routes arriving at or leaving ${port}, Venezuela. Categorize as 'import' (arriving at ${port}) or 'export' (leaving ${port}). Get approx latitude and longitude for origin and destination ports worldwide. YOU MUST ONLY RETURN REAL EXTRACTED DATA. IF NO DATA IS AVAILABLE, RETURN AN EMPTY ARRAY. DO NOT MAKE UP DATA.`,
-            schema: schema
-          });
-
-          const result = extractResult as any;
-          if (result.success && result.data && result.data.ships) {
-             for (const ship of result.data.ships) {
-                // Deterministic pseudo-mmsi from shipName to avoid random duplicates
-                let hash = 0;
-                for (let i = 0; i < ship.shipName.length; i++) hash = Math.imul(31, hash) + ship.shipName.charCodeAt(i) | 0;
-                const mockMmsi = 990000000 + Math.abs(hash % 9999999);
-                staticShips.push({
-                   mmsi: mockMmsi,
-                   shipName: ship.shipName,
-                   type: ship.type,
-                   originLat: ship.type === 'import' ? ship.originLat : target.lat, 
-                   originLng: ship.type === 'import' ? ship.originLng : target.lng,
-                   destinationLat: ship.type === 'import' ? target.lat : ship.destinationLat,
-                   destinationLng: ship.type === 'import' ? target.lng : ship.destinationLng,
-                   date: new Date().toISOString()
-                });
-             }
+          const { ApifyClient } = await import('apify-client');
+          const apifyKey = process.env.APIFY_API_KEY;
+          if (!apifyKey) {
+             throw new Error("Missing APIFY_API_KEY environment variable");
           }
+          const client = new ApifyClient({ token: apifyKey });
+
+          console.log(`Forcing Apify scrape for port: ${port} area...`);
+
+          // Broad bounding box around Venezuela Coast
+          const input = {
+              "lat": target.lat.toString(),
+              "lon": target.lng.toString(),
+              "zoom": 6
+          };
+
+          const run = await client.actor("romy~marine-traffic-scraper").call(input);
+          const { items } = await client.dataset(run.defaultDatasetId).listItems();
+          
+          if (items && items.length > 0) {
+            const uniqueShips = new Map();
+            items.forEach((item: any) => {
+              if (!item.MMSI && !item.SHIPNAME) return;
+              
+              // Only cargo type ships
+              const typeName = (item.TYPE_NAME || item.SHIP_TYPE || "").toLowerCase();
+              const isCargo = typeName.includes('cargo') || item.TYPE === 7 || item.TYPE === 8;
+              if (typeName && !isCargo) return;
+
+              const mmsi = item.MMSI || Math.floor(Math.random() * 1000000);
+              const shipName = item.SHIPNAME || item.NAME || "Unknown";
+              const lat = Number(item.LAT);
+              const lng = Number(item.LON);
+
+              if (!isNaN(lat) && !isNaN(lng)) {
+                // Seed the live cache
+                const existing: any = shipCache.get(mmsi) || { mmsi, lat: 0, lng: 0, lastUpdate: new Date() };
+                existing.lat = lat;
+                existing.lng = lng;
+                existing.name = shipName;
+                existing.destination = item.DESTINATION || "Desconocido";
+                existing.type = item.TYPE || (isCargo ? 7 : undefined);
+                existing.lastUpdate = new Date();
+                shipCache.set(mmsi, existing);
+              }
+
+              if (!uniqueShips.has(mmsi)) {
+                 const destination = (item.DESTINATION || "").toLowerCase();
+                 const isImport = destination.includes(port.toLowerCase());
+                 
+                 uniqueShips.set(mmsi, {
+                    mmsi: mmsi,
+                    shipName: shipName,
+                    type: isImport ? 'import' : 'export',
+                    originLat: isImport ? lat : target.lat,
+                    originLng: isImport ? lng : target.lng,
+                    destinationLat: isImport ? target.lat : lat,
+                    destinationLng: isImport ? target.lng : lng,
+                    date: new Date().toISOString()
+                 });
+              }
+            });
+            staticShips.push(...Array.from(uniqueShips.values()));
+          }
+
         } catch (e: any) {
-          console.error("Firecrawl extraction failed:", e.message);
+          console.error("Apify extraction failed:", e.message);
+          res.json({ success: false, error: `Apify extraction failed: ${e.message}`, liveData: [], staticData: [] });
+          return;
         }
       }
       

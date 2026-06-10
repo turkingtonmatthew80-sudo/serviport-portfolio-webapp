@@ -187,7 +187,8 @@ export function AdminAprobaciones() {
                   )}
                 </div>
               </motion.div>
-            ))
+            ))}
+            </>
           ) : (
             <div className="p-12 text-center text-foreground-muted">
               <CheckCircle2 className="mx-auto h-12 w-12 text-slate-200 mb-3" />

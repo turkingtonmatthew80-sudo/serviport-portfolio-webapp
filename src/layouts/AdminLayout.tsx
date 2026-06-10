@@ -36,10 +36,10 @@ const roleNavigation: Record<string, { name: string; path: string; icon: any }[]
     { name: "Control Buques", path: "/admin/buques", icon: Ship },
   ],
   CONTADOR: [
-    { name: "Terminal Fnanciero", path: "/admin/dashboard", icon: DollarSign },
+    { name: "Terminal Financiero", path: "/admin/dashboard", icon: DollarSign },
   ],
   ESTIBADOR: [
-    { name: "Mis Tareas", path: "/admin/dashboard", icon: Box },
+    { name: "Mis Tareas", path: "/admin/estibador", icon: Box },
   ],
 };
 

@@ -96,9 +96,13 @@ export function CargoGlobe() {
            await saveShipRecords(json.staticData, selectedPort);
            setStaticData(json.staticData);
         }
+        setError(null);
+      } else {
+        setError(json.error || "Error al sincronizar datos");
       }
     } catch (e: any) {
       console.error(e);
+      setError(e.message);
     } finally {
       setSyncingLayer(false);
     }
@@ -150,9 +154,7 @@ export function CargoGlobe() {
     const initData = async () => {
       await loadLocalDbData();
       if (!isMounted) return;
-      await fetchData();
-      if (!isMounted) return;
-      await forceScrape();
+      await fetchData(); // Fetch data (without forceScrape)
     };
     
     initData();
@@ -293,7 +295,7 @@ export function CargoGlobe() {
                 className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded font-semibold text-sm transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={16} className={syncingLayer ? 'animate-spin' : ''} />
-                Sincronizar Rutas Históricas
+                Actualizar Datos (Vía Apify)
               </button>
               
               <div className="bg-background border border-border p-3 rounded text-sm text-foreground-muted">
@@ -320,10 +322,23 @@ export function CargoGlobe() {
           )}
           
           {error && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 text-white backdrop-blur-sm">
-              <p className="text-red-400 font-bold bg-red-900/30 p-4 border border-red-500/50 rounded max-w-sm text-center">
-                Error de conexión: {error}
-              </p>
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/50 text-white backdrop-blur-sm px-4">
+              <div className="bg-red-950/80 p-6 border border-red-500/50 rounded-lg max-w-md text-center shadow-xl backdrop-blur-md">
+                <span className="text-red-400 font-bold block mb-2 text-lg">Se requiere acción manual</span>
+                <p className="text-red-200 text-sm mb-4">
+                  {error.split('https://')[0]}
+                </p>
+                {error.includes('https://') && (
+                  <a 
+                    href={`https://${error.split('https://')[1]}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-block bg-white text-base text-black hover:bg-slate-200 hover:scale-105 transition-all font-bold py-2 px-4 rounded-md"
+                  >
+                    Abrir consola para autorizar
+                  </a>
+                )}
+              </div>
             </div>
           )}
 
@@ -380,13 +395,13 @@ export function CargoGlobe() {
                   onClick={() => setListTab('live')}
                   className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${listTab === 'live' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground-muted hover:text-foreground'}`}
                 >
-                  Tráfico en Vivo (AIS)
+                  Posiciones Actuales (En Vivo)
                 </button>
                 <button 
                   onClick={() => setListTab('history')}
                   className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${listTab === 'history' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground-muted hover:text-foreground'}`}
                 >
-                  Histórico (MyShipTracking)
+                  Conexiones (Histórico)
                 </button>
             </div>
         </div>
