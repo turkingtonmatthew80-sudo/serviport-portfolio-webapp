@@ -154,7 +154,7 @@ export function AgenciamientoNavieroPage() {
                     to="/portal"
                     className="bg-background/10 font-bold px-6 py-3 text-center rounded-sm hover:bg-background/20 transition-colors whitespace-nowrap"
                   >
-                    Acceder al Portal B2B
+                    Acceder al Portal
                   </Link>
                 </div>
               </div>

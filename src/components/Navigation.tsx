@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { X, ChevronRight, Menu, Moon, Sun } from "lucide-react";
+import { X, ChevronRight, ChevronDown, Menu, Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { GlobalSearch } from "./GlobalSearch";
 import { useTheme } from "../contexts/ThemeContext";
@@ -121,8 +121,16 @@ export function Navigation() {
   const location = useLocation();
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMobileMenus, setExpandedMobileMenus] = useState<Record<string, boolean>>({});
   const timeoutRef = useRef<number | null>(null);
   const { theme, toggleTheme } = useTheme();
+
+  const toggleMobileMenuExpansion = (key: string) => {
+    setExpandedMobileMenus((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   const handleMouseEnter = (menu: MenuKey) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -143,23 +151,24 @@ export function Navigation() {
   useEffect(() => {
     setActiveMenu(null);
     setMobileMenuOpen(false);
+    setExpandedMobileMenus({});
   }, [location.pathname]);
 
   const containerStyles: Record<MenuKey, { theme: string; textColor: string }> = {
     nosotros: {
-      theme: "bg-[#f1f5f9] hover:bg-[#e2e8f0]",
-      textColor: "text-slate-800"
+      theme: "bg-[#1e293b] hover:bg-[#1a2332] dark:bg-[#0f172a] dark:hover:bg-[#1e293b]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     },
     servicios: {
       theme: "bg-[#0B5C75] hover:bg-[#084e63]",
       textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     },
     sectores: {
-      theme: "bg-[#ea580c] hover:bg-[#d97706]",
+      theme: "bg-[#f7941d] hover:bg-[#e38312]",
       textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     },
     herramientas: {
-      theme: "bg-[#1e293b] hover:bg-[#1a2332]",
+      theme: "bg-[#1e293b] hover:bg-[#1a2332] dark:bg-[#0f172a] dark:hover:bg-[#1e293b]",
       textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     },
     noticias: {
@@ -167,57 +176,42 @@ export function Navigation() {
       textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     },
     contacto: {
-      theme: "bg-[#ea580c] hover:bg-[#d97706]",
+      theme: "bg-[#f7941d] hover:bg-[#e38312]",
       textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     }
   };
 
   return (
     <nav
-      className="w-full bg-[#050B14] text-white h-20 flex justify-between items-center z-50 relative border-b border-black/40 shadow-lg"
+      className="w-full bg-background text-foreground h-20 flex justify-between items-center z-50 relative border-b border-border shadow-sm transition-colors duration-300"
       onMouseLeave={handleMouseLeave}
     >
       {/* Container row covering full bar width */}
-      <div className="w-full h-full flex items-center justify-between overflow-hidden">
+      <div className="w-full h-full flex items-center justify-between">
         
         {/* LEFT FILLERS & LOGO PART */}
-        <div className="flex h-full items-center">
-          {/* Infinite wide container wall on the left */}
-          <div className="hidden xl:flex h-full items-center">
-            <ContainerUnit theme="bg-[#0B5C75]" isDecorative />
-            <ContainerUnit theme="bg-[#1e293b]" isDecorative className="hidden 2xl:flex" />
-          </div>
+        <div className="flex h-full items-center pl-2 sm:pl-4 md:pl-6">
+          {/* Mobile menu trigger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden mr-2 sm:mr-4 text-foreground hover:text-primary transition-colors p-2 focus:outline-none shrink-0"
+            aria-label="Toggle mobile menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
-          {/* Mobile menu trigger in a square safety container */}
-          <div className="md:hidden h-full flex items-center">
-            <ContainerUnit 
-              isSquare
-              theme={mobileMenuOpen ? "bg-[#ea580c]" : "bg-[#1e293b]"}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <div className="pointer-events-none">
-                {mobileMenuOpen ? <X size={22} className="text-white" /> : <Menu size={22} className="text-white" />}
-              </div>
-            </ContainerUnit>
-          </div>
-
-          {/* Logo container (Rectangular) with high-contrast light grey background */}
-          <Link to="/" className="h-full block">
-            <ContainerUnit
-              theme="bg-[#f1f5f9]"
-              className="w-[170px] md:w-[210px] h-full"
-            >
-              <img
-                src="/logo.png"
-                alt="Serviport Logo"
-                className="h-8 md:h-10 w-auto object-contain px-2 opacity-100 transition-opacity"
-              />
-            </ContainerUnit>
+          {/* Logo container without background wrapper, handles theme inversion beautifully */}
+          <Link to="/" className="h-full flex items-center relative z-10 py-2 shrink-0">
+            <img
+              src="/logo.png"
+              alt="Serviport Logo"
+              className={`h-7 sm:h-9 md:h-12 w-auto object-contain transition-all duration-300 ${theme === "dark" ? "invert brightness-0 filter brightness-0 invert" : ""}`}
+            />
           </Link>
         </div>
 
         {/* MIDDLE NAV LINKS - RECTANGULAR INTERACTIVE CONTAINERS */}
-        <div className="hidden md:flex items-center h-full flex-grow max-w-[850px]">
+        <div className="hidden md:flex items-center h-full flex-grow max-w-[850px] px-4">
           {(Object.keys(megaMenuData) as MenuKey[]).map((key) => {
             const config = containerStyles[key];
             const isActive = activeMenu === key || location.pathname.startsWith(`/${key}`);
@@ -241,40 +235,29 @@ export function Navigation() {
         </div>
 
         {/* RIGHT ACTIONS SECTION */}
-        <div className="flex h-full items-center">
+        <div className="flex h-full items-center gap-1 sm:gap-2 md:gap-4 pr-2 sm:pr-4 md:pr-6">
           
-          {/* Theme Toggle square container (styled as a reefer climate core unit) */}
-          <ContainerUnit
-            isSquare
-            theme={theme === "light" ? "bg-[#f1f5f9]" : "bg-[#1e293b]"}
+          {/* Theme Toggle Button */}
+          <button
             onClick={toggleTheme}
+            className="p-2 sm:p-2.5 rounded-full text-foreground hover:bg-background-muted hover:text-primary transition-colors focus:outline-none shrink-0"
+            aria-label="Toggle theme"
           >
-            <div className="pointer-events-none">
-              {theme === "light" ? <Moon size={20} className="text-zinc-800" /> : <Sun size={20} className="text-amber-400" />}
-            </div>
-          </ContainerUnit>
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
 
-          {/* Search trigger (Inside nested relative flex) */}
-          <div className="h-full flex items-center">
+          {/* Search Trigger */}
+          <div className="shrink-0 flex items-center">
             <GlobalSearch />
           </div>
 
-          {/* B2B Portal button: customized safety-orange high cube container */}
-          <ContainerUnit
-            theme="bg-[#ea580c] hover:bg-[#d97706]"
-            className="md:w-[130px] w-[86px] h-full"
+          {/* Portal Button (Original Pill Style) */}
+          <button
             onClick={() => navigate("/login")}
+            className="bg-[#f7941d] hover:bg-[#e38312] text-white px-2.5 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded font-black hover:-translate-y-[1px] active:translate-y-0 transition-all shadow-sm text-[10px] sm:text-xs md:text-sm whitespace-nowrap uppercase tracking-wider shrink-0"
           >
-            <span className="font-sans font-black tracking-wider text-[9px] md:text-[11px] lg:text-xs text-white drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.7)] uppercase text-center leading-tight">
-              PORTAL B2B
-            </span>
-          </ContainerUnit>
-
-          {/* Infinite wide container wall on the right */}
-          <div className="hidden xl:flex h-full items-center">
-            <ContainerUnit theme="bg-[#1e293b]" isDecorative className="hidden 2xl:flex" />
-            <ContainerUnit theme="bg-[#0284c7]" isDecorative />
-          </div>
+            Portal
+          </button>
         </div>
       </div>
 
@@ -285,18 +268,19 @@ export function Navigation() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="absolute top-20 left-0 w-full bg-[#080d1a] border-t border-black/40 shadow-2xl overflow-y-auto md:hidden z-40 p-4 flex flex-col gap-3"
+            className="absolute top-20 left-0 w-full bg-slate-100 dark:bg-[#080d1a] border-t border-border dark:border-black/40 shadow-2xl overflow-y-auto md:hidden z-40 p-4 flex flex-col gap-3"
             style={{ maxHeight: "calc(100vh - 80px)" }}
           >
             {(Object.keys(megaMenuData) as MenuKey[]).map((key) => {
               const config = containerStyles[key];
+              const isExpanded = !!expandedMobileMenus[key];
               return (
                 <div
                   key={key}
-                  className={`rounded border border-black/30 shadow-md ${config.theme} relative overflow-hidden`}
+                  className={`rounded border border-black/10 dark:border-black/30 shadow-md ${config.theme} relative overflow-hidden shrink-0`}
                 >
-                  {/* Crisp, Minimalist Flat Vertical Corrugation Lines */}
-                  <div className="absolute inset-0 flex justify-around px-4 pointer-events-none opacity-[0.14]">
+                  {/* Crisp, Minimalist Flat Vector Corrugation Lines */}
+                  <div className="absolute inset-0 flex justify-around px-4 pointer-events-none opacity-[0.08] dark:opacity-[0.14]">
                     <div className="w-[1.5px] h-full bg-black" />
                     <div className="w-[1.5px] h-full bg-black" />
                     <div className="w-[1.5px] h-full bg-black" />
@@ -313,21 +297,45 @@ export function Navigation() {
                     >
                       {megaMenuData[key].title}
                     </Link>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleMobileMenuExpansion(key);
+                      }}
+                      className={`ml-2 p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all outline-none ${config.textColor}`}
+                      aria-label="Toggle submenu"
+                    >
+                      <ChevronDown
+                        size={20}
+                        className={`transition-transform duration-300 ${isExpanded ? "rotate-180" : "rotate-0"}`}
+                      />
+                    </button>
                   </div>
 
-                  <div className="px-5 pb-4 flex flex-col gap-2 relative z-10">
-                    {megaMenuData[key].links.map((link, idx) => (
-                      <Link
-                        key={idx}
-                        to={link.path}
-                        onClick={handleMenuClick}
-                        className="text-white/90 hover:text-white duration-200 transition-transform py-2 flex items-center gap-2 text-xs font-bold leading-none bg-black/25 shadow-sm border border-white/5 rounded px-3"
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="px-5 pb-4 flex flex-col gap-2 relative z-10 overflow-hidden"
                       >
-                        <ChevronRight size={12} className="text-[#f59e0b] shrink-0" />
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
+                        {megaMenuData[key].links.map((link, idx) => (
+                          <Link
+                            key={idx}
+                            to={link.path}
+                            onClick={handleMenuClick}
+                            className="text-white/95 hover:text-white duration-200 transition-all py-2.5 flex items-center gap-2 text-xs font-bold leading-none bg-white/10 dark:bg-black/30 shadow-inner border border-white/10 rounded px-3 active:scale-[0.98]"
+                          >
+                            <ChevronRight size={12} className="text-[#f7941d] shrink-0" />
+                            {link.label}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}

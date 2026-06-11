@@ -88,7 +88,7 @@ export function FooterSection() {
               to="/login"
               className="flex items-center justify-between bg-accent text-white px-4 py-3 rounded hover:bg-orange-500 transition-colors text-center font-bold"
             >
-              Login Portal B2B
+              Login al Portal
             </Link>
             <Link
               to="/admin-login"

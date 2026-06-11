@@ -317,7 +317,7 @@ export function PortalLayout() {
               <Navigation size={20} />
             </button>
             <h1 className="text-lg font-bold text-foreground tracking-tight hidden sm:block">
-              Portal B2B
+              Portal
             </h1>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">

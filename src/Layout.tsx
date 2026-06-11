@@ -12,7 +12,7 @@ export function Layout() {
     servicios: "Servicios",
     sectores: "Sectores",
     herramientas: "Herramientas",
-    portal: "Portal B2B",
+    portal: "Portal",
     noticias: "Noticias",
     contacto: "Contacto",
     "agenciamiento-naviero": "Agenciamiento Naviero",

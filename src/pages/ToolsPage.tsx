@@ -273,7 +273,7 @@ export function ToolsPage() {
               onClick={() => navigate("/portal")}
               className="bg-primary text-foreground px-5 py-2.5 rounded font-bold hover:bg-primary hover:text-white transition-colors text-xs uppercase tracking-wider"
             >
-              ACCEDER AL PORTAL B2B
+              ACCEDER AL PORTAL
             </button>
           </div>
 
