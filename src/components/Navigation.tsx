@@ -4,6 +4,7 @@ import { X, ChevronRight, Menu, Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { GlobalSearch } from "./GlobalSearch";
 import { useTheme } from "../contexts/ThemeContext";
+import { ContainerUnit } from "./ContainerUnit";
 
 export const megaMenuData = {
   nosotros: {
@@ -144,112 +145,192 @@ export function Navigation() {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  const containerStyles: Record<MenuKey, { theme: string; textColor: string }> = {
+    nosotros: {
+      theme: "bg-[#f1f5f9] hover:bg-[#e2e8f0]",
+      textColor: "text-slate-800"
+    },
+    servicios: {
+      theme: "bg-[#0B5C75] hover:bg-[#084e63]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
+    },
+    sectores: {
+      theme: "bg-[#ea580c] hover:bg-[#d97706]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
+    },
+    herramientas: {
+      theme: "bg-[#1e293b] hover:bg-[#1a2332]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
+    },
+    noticias: {
+      theme: "bg-[#0284c7] hover:bg-[#0274af]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
+    },
+    contacto: {
+      theme: "bg-[#ea580c] hover:bg-[#d97706]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
+    }
+  };
+
   return (
     <nav
-      className="w-full bg-background text-foreground-muted h-20 flex justify-between items-center z-50 relative border-b border-border transition-colors duration-300"
+      className="w-full bg-[#050B14] text-white h-20 flex justify-between items-center z-50 relative border-b border-black/40 shadow-lg"
       onMouseLeave={handleMouseLeave}
     >
-      <div className="flex h-full items-center px-4 md:px-6">
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden mr-4 text-foreground-muted p-1"
-          aria-label="Toggle mobile menu"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-        <Link
-          tracking-tight="true"
-          to="/"
-          className="h-full flex items-center py-2 md:py-4 relative z-10"
-        >
-          <img
-            src="/logo.png"
-            alt="Serviport Logo"
-            className={`h-10 md:h-full w-auto object-contain ${theme === "dark" ? "invert brightness-0 mt-2" : ""}`}
-            style={theme === "dark" ? { filter: "brightness(0) invert(1)" } : {}}
-          />
-        </Link>
-      </div>
-
-      <div className="hidden md:flex items-center h-full gap-8 font-bold text-sm">
-        {(Object.keys(megaMenuData) as MenuKey[]).map((key) => (
-          <div
-            key={key}
-            className="h-full flex items-center relative"
-            onMouseEnter={() => handleMouseEnter(key)}
-          >
-            <Link
-              to={`/${key}`}
-              className={`flex items-center h-full px-2 transition-colors ${activeMenu === key ? "text-primary" : "hover:text-primary"} text-foreground-muted dark:text-foreground`}
-              onClick={handleMenuClick}
-            >
-              {megaMenuData[key].title}
-            </Link>
-            {activeMenu === key && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
-            )}
+      {/* Container row covering full bar width */}
+      <div className="w-full h-full flex items-center justify-between overflow-hidden">
+        
+        {/* LEFT FILLERS & LOGO PART */}
+        <div className="flex h-full items-center">
+          {/* Infinite wide container wall on the left */}
+          <div className="hidden xl:flex h-full items-center">
+            <ContainerUnit theme="bg-[#0B5C75]" isDecorative />
+            <ContainerUnit theme="bg-[#1e293b]" isDecorative className="hidden 2xl:flex" />
           </div>
-        ))}
+
+          {/* Mobile menu trigger in a square safety container */}
+          <div className="md:hidden h-full flex items-center">
+            <ContainerUnit 
+              isSquare
+              theme={mobileMenuOpen ? "bg-[#ea580c]" : "bg-[#1e293b]"}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <div className="pointer-events-none">
+                {mobileMenuOpen ? <X size={22} className="text-white" /> : <Menu size={22} className="text-white" />}
+              </div>
+            </ContainerUnit>
+          </div>
+
+          {/* Logo container (Rectangular) with high-contrast light grey background */}
+          <Link to="/" className="h-full block">
+            <ContainerUnit
+              theme="bg-[#f1f5f9]"
+              className="w-[170px] md:w-[210px] h-full"
+            >
+              <img
+                src="/logo.png"
+                alt="Serviport Logo"
+                className="h-8 md:h-10 w-auto object-contain px-2 opacity-100 transition-opacity"
+              />
+            </ContainerUnit>
+          </Link>
+        </div>
+
+        {/* MIDDLE NAV LINKS - RECTANGULAR INTERACTIVE CONTAINERS */}
+        <div className="hidden md:flex items-center h-full flex-grow max-w-[850px]">
+          {(Object.keys(megaMenuData) as MenuKey[]).map((key) => {
+            const config = containerStyles[key];
+            const isActive = activeMenu === key || location.pathname.startsWith(`/${key}`);
+            return (
+              <ContainerUnit
+                key={key}
+                theme={config.theme}
+                isActive={isActive}
+                onMouseEnter={() => handleMouseEnter(key)}
+              >
+                <Link
+                  to={`/${key}`}
+                  className={`w-full h-full flex items-center justify-center font-black tracking-wider text-[11px] lg:text-xs xl:text-sm uppercase pointer-events-auto transition-colors ${config.textColor}`}
+                  onClick={handleMenuClick}
+                >
+                  {megaMenuData[key].title}
+                </Link>
+              </ContainerUnit>
+            );
+          })}
+        </div>
+
+        {/* RIGHT ACTIONS SECTION */}
+        <div className="flex h-full items-center">
+          
+          {/* Theme Toggle square container (styled as a reefer climate core unit) */}
+          <ContainerUnit
+            isSquare
+            theme={theme === "light" ? "bg-[#f1f5f9]" : "bg-[#1e293b]"}
+            onClick={toggleTheme}
+          >
+            <div className="pointer-events-none">
+              {theme === "light" ? <Moon size={20} className="text-zinc-800" /> : <Sun size={20} className="text-amber-400" />}
+            </div>
+          </ContainerUnit>
+
+          {/* Search trigger (Inside nested relative flex) */}
+          <div className="h-full flex items-center">
+            <GlobalSearch />
+          </div>
+
+          {/* B2B Portal button: customized safety-orange high cube container */}
+          <ContainerUnit
+            theme="bg-[#ea580c] hover:bg-[#d97706]"
+            className="md:w-[130px] w-[86px] h-full"
+            onClick={() => navigate("/login")}
+          >
+            <span className="font-sans font-black tracking-wider text-[9px] md:text-[11px] lg:text-xs text-white drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.7)] uppercase text-center leading-tight">
+              PORTAL B2B
+            </span>
+          </ContainerUnit>
+
+          {/* Infinite wide container wall on the right */}
+          <div className="hidden xl:flex h-full items-center">
+            <ContainerUnit theme="bg-[#1e293b]" isDecorative className="hidden 2xl:flex" />
+            <ContainerUnit theme="bg-[#0284c7]" isDecorative />
+          </div>
+        </div>
       </div>
 
-      <div className="px-4 md:px-6 flex items-center h-full gap-2 md:gap-4">
-        <button
-          onClick={toggleTheme}
-          className="p-2 mr-1 rounded-full text-foreground-muted hover:bg-background-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-          aria-label="Toggle theme"
-        >
-          {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
-        <GlobalSearch />
-        <button
-          onClick={() => navigate("/login")}
-          className="bg-primary md:bg-secondary text-white px-4 md:px-6 py-2 md:py-2.5 rounded font-bold hover:bg-primary md:hover:bg-slate-800 transition-colors shadow-sm text-xs md:text-sm whitespace-nowrap"
-        >
-          PORTAL B2B
-        </button>
-      </div>
-
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Slide-Out stacked as beautifully organized containers */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="absolute top-20 left-0 w-full bg-secondary border-t border-white/10 shadow-2xl overflow-y-auto md:hidden"
-            style={{ maxHeight: "calc(100dvh - 80px)" }}
+            className="absolute top-20 left-0 w-full bg-[#080d1a] border-t border-black/40 shadow-2xl overflow-y-auto md:hidden z-40 p-4 flex flex-col gap-3"
+            style={{ maxHeight: "calc(100vh - 80px)" }}
           >
-            <div className="flex flex-col py-4">
-              {(Object.keys(megaMenuData) as MenuKey[]).map((key) => (
+            {(Object.keys(megaMenuData) as MenuKey[]).map((key) => {
+              const config = containerStyles[key];
+              return (
                 <div
                   key={key}
-                  className="border-b border-white/10 last:border-0"
+                  className={`rounded border border-black/30 shadow-md ${config.theme} relative overflow-hidden`}
                 >
-                  <div className="px-6 py-4 font-bold text-white text-lg flex items-center justify-between">
+                  {/* Crisp, Minimalist Flat Vertical Corrugation Lines */}
+                  <div className="absolute inset-0 flex justify-around px-4 pointer-events-none opacity-[0.14]">
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[1.5px] h-full bg-black" />
+                  </div>
+                  
+                  <div className="px-5 py-4 font-black tracking-wider text-base flex items-center justify-between relative z-10">
                     <Link
                       to={megaMenuData[key].path}
                       onClick={handleMenuClick}
-                      className="flex-1"
+                      className={`flex-1 uppercase font-black font-sans leading-none tracking-wider ${config.textColor}`}
                     >
                       {megaMenuData[key].title}
                     </Link>
                   </div>
-                  <div className="px-8 pb-4 flex flex-col gap-3">
+
+                  <div className="px-5 pb-4 flex flex-col gap-2 relative z-10">
                     {megaMenuData[key].links.map((link, idx) => (
                       <Link
                         key={idx}
                         to={link.path}
                         onClick={handleMenuClick}
-                        className="text-slate-300 hover:text-white transition-colors py-1 flex items-center gap-2 text-sm"
+                        className="text-white/90 hover:text-white duration-200 transition-transform py-2 flex items-center gap-2 text-xs font-bold leading-none bg-black/25 shadow-sm border border-white/5 rounded px-3"
                       >
-                        <ChevronRight size={14} className="text-accent" />
+                        <ChevronRight size={12} className="text-[#f59e0b] shrink-0" />
                         {link.label}
                       </Link>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
@@ -262,7 +343,7 @@ export function Navigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="hidden md:block absolute top-20 left-0 w-full bg-secondary border-t border-white/10 shadow-2xl overflow-hidden"
+            className="hidden md:block absolute top-20 left-0 w-full bg-secondary border-t border-black/40 shadow-2xl overflow-hidden z-40"
             onMouseEnter={() => {
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
             }}

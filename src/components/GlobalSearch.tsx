@@ -3,6 +3,7 @@ import { Search, X, FileText, Compass } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { megaMenuData } from "./Navigation";
 import { newsData } from "../data/newsData";
+import { ContainerUnit } from "./ContainerUnit";
 
 export function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
@@ -65,13 +66,13 @@ export function GlobalSearch() {
   return (
     <div className="relative flex items-center">
       {!isOpen ? (
-        <button
+        <ContainerUnit
+          isSquare
+          theme="bg-[#1e293b]"
           onClick={() => setIsOpen(true)}
-          className="p-2 text-foreground-muted hover:text-primary transition-colors"
-          aria-label="Buscar en Serviport"
         >
-          <Search size={20} />
-        </button>
+          <Search size={20} className="text-white" />
+        </ContainerUnit>
       ) : (
         <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center bg-background-muted rounded-sm w-48 md:w-64 z-50">
           <Search size={18} className="text-foreground-muted ml-3 shrink-0" />
