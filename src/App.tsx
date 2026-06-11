@@ -40,6 +40,9 @@ import { AdminYard } from "./pages/AdminYard";
 import { AdminGate } from "./pages/AdminGate";
 import { AdminBuques } from "./pages/AdminBuques";
 import { AdminEstibador } from "./pages/AdminEstibador";
+import { AdminCuadrillas } from "./pages/AdminCuadrillas";
+import { AdminMonitoreoTOS } from "./pages/AdminMonitoreoTOS";
+import { AdminRendimiento } from "./pages/AdminRendimiento";
 import { B2BRegisterPage } from "./pages/B2BRegisterPage";
 import { PortalIndexRoute } from "./pages/portal/PortalIndexRoute";
 import { NavieraDashboard } from "./pages/portal/roles/NavieraDashboard";
@@ -157,6 +160,21 @@ export default function App() {
              <Route path="estibador" element={
                 <AdminRoleGuard allowedRoles={["ESTIBADOR", "GERENTE_OPERACIONES"]}>
                   <AdminEstibador />
+                </AdminRoleGuard>
+             } />
+             <Route path="cuadrillas" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "SUPERADMIN"]}>
+                  <AdminCuadrillas />
+                </AdminRoleGuard>
+             } />
+             <Route path="monitoreo-tos" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "SUPERADMIN", "PLANIFICADOR_PATIO"]}>
+                  <AdminMonitoreoTOS />
+                </AdminRoleGuard>
+             } />
+             <Route path="rendimiento" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "SUPERADMIN"]}>
+                  <AdminRendimiento />
                 </AdminRoleGuard>
              } />
           </Route>

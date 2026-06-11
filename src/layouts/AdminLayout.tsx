@@ -11,7 +11,8 @@ import {
   Users,
   Settings,
   DollarSign,
-  Box
+  Box,
+  TrendingUp
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "../lib/utils";
@@ -25,6 +26,9 @@ const roleNavigation: Record<string, { name: string; path: string; icon: any }[]
   GERENTE_OPERACIONES: [
     { name: "Dashboard Operaciones", path: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Aprobaciones", path: "/admin/aprobaciones", icon: Shield },
+    { name: "Monitoreo TOS 2D", path: "/admin/monitoreo-tos", icon: Map },
+    { name: "Cuadrillas y Turnos", path: "/admin/cuadrillas", icon: Users },
+    { name: "Rendimiento y KPIs", path: "/admin/rendimiento", icon: TrendingUp },
   ],
   PLANIFICADOR_PATIO: [
     { name: "Planificador de Patio", path: "/admin/yard", icon: Map },
