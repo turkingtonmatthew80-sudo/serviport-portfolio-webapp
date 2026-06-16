@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Package, Search, Map, LayoutDashboard } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -14,15 +15,14 @@ export function ImportadorDashboard() {
     if (!user) return;
     
     const q = query(
-      collection(db, "contenedores"),
-      where("userId", "==", user.id),
+      collection(db, "contenedores")
     );
     
     // Wire up real-time listener
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
+        ...(doc.data() as any),
       }));
       setContainers(data);
       setLoading(false);
@@ -99,9 +99,9 @@ export function ImportadorDashboard() {
             <Map className="text-primary" size={20} />
             Mis Contenedores en Almacén Documentado
           </h2>
-          <button className="text-sm text-primary font-bold hover:underline hidden sm:block">
+          <Link to="/portal/importador/retiros" className="text-sm text-primary font-bold hover:underline hidden sm:block">
             Ir a Retiros
-          </button>
+          </Link>
         </div>
         <div className="p-0 flex-1 flex flex-col">
           <div className="overflow-x-auto">
@@ -150,9 +150,9 @@ export function ImportadorDashboard() {
                         className="hover:bg-background-muted transition-colors"
                       >
                         <td className="px-6 py-4 font-mono font-bold text-foreground">
-                          {row.containerId}
+                          {row.containerId || row.containerNumber || `CONT-${i+1}`}
                         </td>
-                        <td className="px-6 py-4">{row.type}</td>
+                        <td className="px-6 py-4">{row.type || "40HC"}</td>
                         <td className="px-6 py-4 font-mono text-xs">
                           {row.location || "N/A"}
                         </td>
@@ -167,9 +167,9 @@ export function ImportadorDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button className="text-primary font-semibold hover:text-accent transition-colors">
+                          <Link to="/portal/importador/retiros" className="text-primary font-semibold hover:text-accent transition-colors">
                             Solicitar Retiro
-                          </button>
+                          </Link>
                         </td>
                       </tr>
                     );

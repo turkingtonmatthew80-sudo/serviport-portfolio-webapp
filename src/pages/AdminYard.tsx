@@ -131,7 +131,7 @@ export function AdminYard() {
         unsubscribePatios = onSnapshot(qPatios, (snap: any) => {
           const loadedPatios: Patio[] = [];
           snap.forEach((doc: any) => {
-            loadedPatios.push({ id: doc.id, ...doc.data() } as Patio);
+            loadedPatios.push({ id: doc.id, ...(doc.data() as any) } as Patio);
           });
           setPatios(loadedPatios);
         });
@@ -144,7 +144,7 @@ export function AdminYard() {
         unsubscribeContainers = onSnapshot(qContainers, (snap: any) => {
           const loadedCons: DBContainer[] = [];
           snap.forEach((doc: any) => {
-            loadedCons.push({ id: doc.id, ...doc.data() } as DBContainer);
+            loadedCons.push({ id: doc.id, ...(doc.data() as any) } as DBContainer);
           });
           setDbContainers(loadedCons);
         });
@@ -157,7 +157,7 @@ export function AdminYard() {
         unsubscribeMovements = onSnapshot(qMovements, (snap: any) => {
           const loadedMovs: YardMovement[] = [];
           snap.forEach((doc: any) => {
-            loadedMovs.push({ id: doc.id, ...doc.data() } as YardMovement);
+            loadedMovs.push({ id: doc.id, ...(doc.data() as any) } as YardMovement);
           });
           setMovements(loadedMovs);
         });

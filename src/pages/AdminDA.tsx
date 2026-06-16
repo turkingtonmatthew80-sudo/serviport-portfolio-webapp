@@ -28,7 +28,7 @@ export function AdminDA() {
       
       try {
         const snap = await getDocs(q);
-        const data = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const data = snap.docs.map(d => ({id: d.id, ...(d.data() as any)}));
         setVessels(data);
       } catch (e) {
         // If query fails (like missing index), fallback without order
@@ -39,7 +39,7 @@ export function AdminDA() {
             fallbackQ = query(collection(db, "portcalls"), limit(5));
         }
         const snap2 = await getDocs(fallbackQ);
-        const data2 = snap2.docs.map(d => ({id: d.id, ...d.data()}));
+        const data2 = snap2.docs.map(d => ({id: d.id, ...(d.data() as any)}));
         setVessels(data2);
       }
     }

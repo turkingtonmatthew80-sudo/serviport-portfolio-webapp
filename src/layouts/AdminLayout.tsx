@@ -25,6 +25,7 @@ const roleNavigation: Record<string, { name: string; path: string; icon: any }[]
     { name: "Monitoreo Scraper", path: "/admin/scraper-panel", icon: Map },
     { name: "Catálogo Buques", path: "/admin/catalogo-buques", icon: Ship },
     { name: "Gestión Empleados", path: "/admin/empleados", icon: Users },
+    { name: "Documentos Legales", path: "/admin/documentos", icon: Box },
     { name: "Configuración", path: "/admin/configuracion", icon: Settings },
   ],
   GERENTE_OPERACIONES: [
@@ -32,6 +33,7 @@ const roleNavigation: Record<string, { name: string; path: string; icon: any }[]
     { name: "Aprobaciones", path: "/admin/aprobaciones", icon: Shield },
     { name: "Monitoreo TOS 2D", path: "/admin/monitoreo-tos", icon: Map },
     { name: "Cuadrillas y Turnos", path: "/admin/cuadrillas", icon: Users },
+    { name: "Documentos Legales", path: "/admin/documentos", icon: Box },
     { name: "Rendimiento y KPIs", path: "/admin/rendimiento", icon: TrendingUp },
   ],
   DESPACHADOR_BUQUES: [

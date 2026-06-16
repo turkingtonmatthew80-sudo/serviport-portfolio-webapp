@@ -37,7 +37,7 @@ export function AdminMonitoreoTOS() {
       const patioSnap = await getDocs(qPatios);
       const pList: Patio[] = [];
       patioSnap.forEach((doc) => {
-        pList.push({ id: doc.id, ...doc.data() } as Patio);
+        pList.push({ id: doc.id, ...(doc.data() as any) } as Patio);
       });
       setPatios(pList);
 
@@ -49,7 +49,7 @@ export function AdminMonitoreoTOS() {
       const movSnap = await getDocs(qMovs);
       const mList: any[] = [];
       movSnap.forEach((doc) => {
-        mList.push({ id: doc.id, ...doc.data() });
+        mList.push({ id: doc.id, ...(doc.data() as any) });
       });
       // Sort recently or status
       setMovements(mList);
@@ -61,10 +61,23 @@ export function AdminMonitoreoTOS() {
       } else {
           gateQ = query(collection(db, "gate_events"), orderBy("timestamp", "desc"), limit(6));
       }
-      const gateSnap = await getDocs(gateQ);
+      
+      let gateSnap;
+      try {
+        gateSnap = await getDocs(gateQ);
+      } catch (err: any) {
+        console.warn("Index missing for gate_events in Monitoreo, falling back to unordered", err);
+        if (!isGlobal) {
+            gateQ = query(collection(db, "gate_events"), where("port", "==", currentPort), limit(20));
+        } else {
+            gateQ = query(collection(db, "gate_events"), limit(20));
+        }
+        gateSnap = await getDocs(gateQ);
+      }
+      
       const gList: any[] = [];
       gateSnap.forEach((doc) => {
-        gList.push({ id: doc.id, ...doc.data() });
+        gList.push({ id: doc.id, ...(doc.data() as any) });
       });
       setGateEvents(gList);
       

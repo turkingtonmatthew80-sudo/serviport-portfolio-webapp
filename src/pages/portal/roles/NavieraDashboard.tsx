@@ -1,21 +1,22 @@
-import { Activity, Anchor, FileText, TrendingUp, Ship } from "lucide-react";
+import { Activity, Anchor, FileText, TrendingUp, Ship, Plus, X } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 export function NavieraDashboard() {
   const { user } = useAuth();
   const [portCalls, setPortCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ name: "", imo: "", voyage: "", eta: "", port: "Puerto Cabello" });
 
   useEffect(() => {
     if (!user) return;
     
     const q = query(
-      collection(db, "port_calls"),
-      where("userId", "==", user.id),
+      collection(db, "portcalls")
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -24,7 +25,6 @@ export function NavieraDashboard() {
         ...(doc.data() as any),
       }));
 
-      // Sort explicitly by createdAt or any reasonable mechanism if timestamps exist
       setPortCalls(
         data.sort((a, b) =>
           (b.createdAt || "").localeCompare(a.createdAt || ""),
@@ -39,9 +39,23 @@ export function NavieraDashboard() {
     return () => unsubscribe();
   }, [user]);
 
-  const actPortCalls = portCalls.filter(
-    (p) => p.status !== "Completado",
-  ).length;
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "portcalls"), {
+        ...formData,
+        status: "Programado",
+        navieraId: user?.uid,
+        createdAt: new Date().toISOString()
+      });
+      setShowModal(false);
+      setFormData({ name: "", imo: "", voyage: "", eta: "", port: "Puerto Cabello" });
+    } catch(err) {
+      console.error(err);
+    }
+  }
+
+  const actPortCalls = portCalls.filter(p => p.status !== "Completado").length;
   const pendientes = portCalls.filter((p) => p.status === "Programado").length;
   const operando = portCalls.filter((p) => p.status === "En Operación").length;
 
@@ -68,7 +82,7 @@ export function NavieraDashboard() {
   ];
 
   return (
-    <div className="max-w-[1260px] mx-auto w-full animate-in fade-in duration-500">
+    <div className="max-w-[1260px] mx-auto w-full animate-in fade-in duration-500 relative">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Panel de Naviera</h1>
         <p className="text-foreground-muted mt-1">
@@ -136,11 +150,11 @@ export function NavieraDashboard() {
                 <div key={i} className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-foreground">
-                      {call.vesselName || "Buque Desconocido"}
+                      {call.name || call.vesselName || "Buque Desconocido"}
                     </p>
                     <p className="text-xs text-foreground-muted">
-                      Viaje: {call.voyageNumber || "--"} |{" "}
-                      {call.location || "En Rada"}
+                      Viaje: {call.voyageNumber || call.voyage || "--"} |{" "}
+                      {call.location || call.port || "En Rada"}
                     </p>
                   </div>
                   <span
@@ -172,11 +186,55 @@ export function NavieraDashboard() {
             Registra una nueva recalada e inicia el flujo operativo de tu buque
             en Puerto Cabello.
           </p>
-          <button className="relative z-10 w-full bg-accent hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-md transition-colors shadow-sm">
+          <button onClick={() => setShowModal(true)} className="relative z-10 w-full bg-accent hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-md transition-colors shadow-sm">
             Nueva Solicitud
           </button>
         </div>
       </div>
+      
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold text-lg">Nueva Solicitud de Port Call</h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+            </div>
+            <form onSubmit={handleCreate} className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre del Buque</label>
+                <input required type="text" className="w-full border rounded p-2 text-sm" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Número IMO</label>
+                <input required type="text" className="w-full border rounded p-2 text-sm" value={formData.imo} onChange={e => setFormData({...formData, imo: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Viaje (Voyage)</label>
+                  <input required type="text" className="w-full border rounded p-2 text-sm" value={formData.voyage} onChange={e => setFormData({...formData, voyage: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">ETA</label>
+                  <input required type="date" className="w-full border rounded p-2 text-sm" value={formData.eta} onChange={e => setFormData({...formData, eta: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Puerto de Escala</label>
+                 <select required className="w-full border rounded p-2 text-sm" value={formData.port} onChange={e => setFormData({...formData, port: e.target.value})}>
+                    <option value="Puerto Cabello">Puerto Cabello</option>
+                    <option value="La Guaira">La Guaira</option>
+                    <option value="Guanta">Guanta</option>
+                    <option value="Maracaibo">Maracaibo</option>
+                 </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-2">
+                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded text-sm font-bold">Cancelar</button>
+                 <button type="submit" className="px-4 py-2 bg-primary text-white rounded text-sm font-bold flex items-center gap-1"><Plus size={16}/> Programar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

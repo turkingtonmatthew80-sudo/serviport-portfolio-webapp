@@ -53,12 +53,26 @@ import { AdminCatalogoBuques } from "./pages/AdminCatalogoBuques";
 import { B2BRegisterPage } from "./pages/B2BRegisterPage";
 import { PortalIndexRoute } from "./pages/portal/PortalIndexRoute";
 import { NavieraDashboard } from "./pages/portal/roles/NavieraDashboard";
+import { NavieraPortCalls } from "./pages/portal/roles/NavieraPortCalls";
+import { NavieraProformas } from "./pages/portal/roles/NavieraProformas";
 import { ImportadorDashboard } from "./pages/portal/roles/ImportadorDashboard";
+import { ImportadorTracking } from "./pages/portal/roles/ImportadorTracking";
+import { ImportadorRetiros } from "./pages/portal/roles/ImportadorRetiros";
 import { ExportadorDashboard } from "./pages/portal/roles/ExportadorDashboard";
+import { ExportadorIngresos } from "./pages/portal/roles/ExportadorIngresos";
+import { ExportadorEmbarque } from "./pages/portal/roles/ExportadorEmbarque";
 import { AgenteAduanaDashboard } from "./pages/portal/roles/AgenteAduanaDashboard";
+import { AduanaConsultas } from "./pages/portal/roles/AduanaConsultas";
+import { AduanaDespachos } from "./pages/portal/roles/AduanaDespachos";
 import { TransportistaDashboard } from "./pages/portal/roles/TransportistaDashboard";
+import { TransportistaOrdenes } from "./pages/portal/roles/TransportistaOrdenes";
+import { TransportistaEirs } from "./pages/portal/roles/TransportistaEirs";
 import { ConsolidadorDashboard } from "./pages/portal/roles/ConsolidadorDashboard";
+import { ConsolidadorMaster } from "./pages/portal/roles/ConsolidadorMaster";
+import { ConsolidadorHouse } from "./pages/portal/roles/ConsolidadorHouse";
 import { ArmadorDashboard } from "./pages/portal/roles/ArmadorDashboard";
+import { ArmadorCuentas } from "./pages/portal/roles/ArmadorCuentas";
+import { ArmadorHusbandry } from "./pages/portal/roles/ArmadorHusbandry";
 import { RoleGuard } from "./components/RoleGuard";
 
 import { SuscripcionPage } from "./pages/portal/SuscripcionPage";
@@ -243,10 +257,7 @@ export default function App() {
               path="naviera/port-calls"
               element={
                 <RoleGuard allowedRoles={["naviera"]}>
-                  <div className="p-8">
-                    <h2 className="text-xl font-bold">Port Calls</h2>Módulo
-                    Naviera en desarrollo
-                  </div>
+                  <NavieraPortCalls />
                 </RoleGuard>
               }
             />
@@ -254,10 +265,7 @@ export default function App() {
               path="naviera/proformas"
               element={
                 <RoleGuard allowedRoles={["naviera"]}>
-                  <div className="p-8">
-                    <h2 className="text-xl font-bold">Proformas</h2>Módulo Naviera
-                    en desarrollo
-                  </div>
+                  <NavieraProformas />
                 </RoleGuard>
               }
             />
@@ -275,10 +283,7 @@ export default function App() {
               path="importador/tracking"
               element={
                 <RoleGuard allowedRoles={["importador"]}>
-                  <div className="p-8">
-                    <h2 className="text-xl font-bold">Trazabilidad AGD</h2>Módulo
-                    Importador en desarrollo
-                  </div>
+                  <ImportadorTracking />
                 </RoleGuard>
               }
             />
@@ -286,10 +291,7 @@ export default function App() {
               path="importador/retiros"
               element={
                 <RoleGuard allowedRoles={["importador"]}>
-                  <div className="p-8">
-                    <h2 className="text-xl font-bold">Retiros</h2>Módulo
-                    Importador en desarrollo
-                  </div>
+                  <ImportadorRetiros />
                 </RoleGuard>
               }
             />
@@ -303,6 +305,22 @@ export default function App() {
                 </RoleGuard>
               }
             />
+            <Route
+              path="exportador/ingresos"
+              element={
+                <RoleGuard allowedRoles={["exportador"]}>
+                  <ExportadorIngresos />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="exportador/embarque"
+              element={
+                <RoleGuard allowedRoles={["exportador"]}>
+                  <ExportadorEmbarque />
+                </RoleGuard>
+              }
+            />
 
             {/* Agente de Aduana */}
             <Route
@@ -310,6 +328,22 @@ export default function App() {
               element={
                 <RoleGuard allowedRoles={["agente_aduana"]}>
                   <AgenteAduanaDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="aduana/consultas"
+              element={
+                <RoleGuard allowedRoles={["agente_aduana"]}>
+                  <AduanaConsultas />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="aduana/despachos"
+              element={
+                <RoleGuard allowedRoles={["agente_aduana"]}>
+                  <AduanaDespachos />
                 </RoleGuard>
               }
             />
@@ -323,6 +357,22 @@ export default function App() {
                 </RoleGuard>
               }
             />
+            <Route
+              path="transportista/ordenes"
+              element={
+                <RoleGuard allowedRoles={["transportista"]}>
+                  <TransportistaOrdenes />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="transportista/eirs"
+              element={
+                <RoleGuard allowedRoles={["transportista"]}>
+                  <TransportistaEirs />
+                </RoleGuard>
+              }
+            />
 
             {/* Consolidador */}
             <Route
@@ -330,6 +380,22 @@ export default function App() {
               element={
                 <RoleGuard allowedRoles={["consolidador"]}>
                   <ConsolidadorDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="consolidador/master"
+              element={
+                <RoleGuard allowedRoles={["consolidador"]}>
+                  <ConsolidadorMaster />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="consolidador/house"
+              element={
+                <RoleGuard allowedRoles={["consolidador"]}>
+                  <ConsolidadorHouse />
                 </RoleGuard>
               }
             />
@@ -343,33 +409,27 @@ export default function App() {
                 </RoleGuard>
               }
             />
+            <Route
+              path="armador/cuentas"
+              element={
+                <RoleGuard allowedRoles={["armador"]}>
+                  <ArmadorCuentas />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="armador/husbandry"
+              element={
+                <RoleGuard allowedRoles={["armador"]}>
+                  <ArmadorHusbandry />
+                </RoleGuard>
+              }
+            />
 
             {/* General (accessible by anyone logged in) */}
             <Route path="suscripcion" element={<SuscripcionPage />} />
 
-            {/* Fallback for other modules to prevent 404s */}
-            <Route
-              path=":rol/dashboard"
-              element={
-                <RoleGuard>
-                  <div className="p-8">
-                    <h2 className="text-xl font-bold">Dashboard</h2>Módulo en
-                    desarrollo
-                  </div>
-                </RoleGuard>
-              }
-            />
-            <Route
-              path=":rol/:modulo"
-              element={
-                <RoleGuard>
-                  <div className="p-8">
-                    <h2 className="text-xl font-bold capitalize">Módulo B2B</h2>
-                    Vistas operativas en desarrollo
-                  </div>
-                </RoleGuard>
-              }
-            />
+
           </Route>
         </Routes>
         </BrowserRouter>

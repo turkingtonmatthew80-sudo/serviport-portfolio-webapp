@@ -4,17 +4,33 @@ import { createServer as createViteServer } from "vite";
 import WebSocket from 'ws';
 import cron from 'node-cron';
 import * as cheerio from 'cheerio';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, updateDoc, collection, writeBatch, getDocs, query, where, addDoc, setDoc } from 'firebase/firestore';
 import TelegramBot from 'node-telegram-bot-api';
 
+const firebaseConfig = {
+  apiKey: "AIzaSyDKiPUS-7IBkYxgygW5kwZG5b3H0BP2LXA",
+  authDomain: "serviport-24f31.firebaseapp.com",
+  projectId: "serviport-24f31",
+  storageBucket: "serviport-24f31.firebasestorage.app",
+  messagingSenderId: "20443440053",
+  appId: "1:20443440053:web:34b301392ede5602a02ffc",
+  measurementId: "G-7ZD8063D0D",
+};
+
+let firebaseApp;
 if (!getApps().length) {
   try {
-    initializeApp();
+    firebaseApp = initializeApp(firebaseConfig);
   } catch(e) {
-    console.warn("Could not init firebase admin", e);
+    console.warn("Could not init firebase client app in server", e);
   }
+} else {
+  firebaseApp = getApps()[0];
 }
+const db = getFirestore(firebaseApp!);
+
+
 
 
 
@@ -71,6 +87,79 @@ function startAutonomousJobs() {
      }
   });
   
+  // Demurrage/Almacenaje Cron Job: Ejecuta cada día a la medianoche
+  cron.schedule("0 0 * * *", async () => {
+    console.log("[CRON] Ejecutando cálculo de Demurrage / Almacenaje (Reloj de Costos)...");
+    try {
+      const contenedoresRef = collection(db, "contenedores");
+      const activeContainersQuery = query(contenedoresRef, where("status", "==", "AGD"));
+      const snapshot = await getDocs(activeContainersQuery);
+      
+      let newInvoices = 0;
+      const facturasRef = collection(db, "facturas_pendientes");
+      
+      for (const cDoc of snapshot.docs) {
+        const cData = cDoc.data();
+        // Assuming arrivalDate exists, or fallback to daysInPort logic.
+        // For simulation purposes if arrivalDate is missing we assume 0 overstays to start, or use daysInPort
+        if (cData.arrivalDate && cData.freeDays) {
+          const arrival = new Date(cData.arrivalDate);
+          const now = new Date();
+          const diffDiff = Math.abs(now.getTime() - arrival.getTime());
+          const diffDays = Math.ceil(diffDiff / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > cData.freeDays) {
+             const overstayDays = diffDays - cData.freeDays;
+             // Solo generar si sobrepasa un dia más respecto a la última vez, 
+             // O simplemente generamos deuda acumulada diaria.
+             
+             await addDoc(facturasRef, {
+               contenedorId: cData.containerId || cDoc.id,
+               tipo: "Demurrage",
+               monto: overstayDays * 120, // USD
+               moneda: "USD",
+               fechaEmision: now.toISOString(),
+               estado: "PENDIENTE",
+               diasRetraso: overstayDays,
+               clienteId: cData.mblId || "Desconocido"
+             });
+             
+             await updateDoc(cDoc.ref, {
+               overstayDays,
+               daysInPort: diffDays
+             });
+             
+             newInvoices++;
+          }
+        } else if (cData.daysInPort && cData.freeDays) {
+          // Fallback logic for seeded data
+          const newDaysInPort = cData.daysInPort + 1;
+          const overstayDays = newDaysInPort > cData.freeDays ? (newDaysInPort - cData.freeDays) : 0;
+          await updateDoc(cDoc.ref, {
+             daysInPort: newDaysInPort,
+             overstayDays: overstayDays
+          });
+          if (overstayDays > 0) {
+             await addDoc(facturasRef, {
+               contenedorId: cData.containerId || cDoc.id,
+               tipo: "Demurrage",
+               monto: overstayDays * 120,
+               moneda: "USD",
+               fechaEmision: new Date().toISOString(),
+               estado: "PENDIENTE",
+               diasRetraso: overstayDays,
+               clienteId: cData.mblId || "Desconocido"
+             });
+             newInvoices++;
+          }
+        }
+      }
+      console.log(`[CRON] Cálculo finalizado. Se generaron ${newInvoices} facturas de demoras.`);
+    } catch (e) {
+      console.error("[CRON] Error calculando Demurrage:", e);
+    }
+  });
+
   // Ejecutamos una vez al iniciar
   console.log("[CRON] Inicializando Gemelo Digital...");
 }
@@ -157,6 +246,100 @@ async function startServer() {
 
   app.use(express.json());
   
+  
+  app.post('/api/seed', async (req, res) => {
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Seed Master BLs
+      const masterBls = [
+        { id: "MBL_1", mbl: "ZIMU12345678", vessel: "ZIM LUANDA (V203)", container: "ZCSU9988112", status: "PENDIENTE", canal: "VERDE", type: "LCL CONSOLIDADO", port: "Puerto Cabello" },
+        { id: "MBL_2", mbl: "MSKU33445566", vessel: "MSC ROSARIA (V101)", container: "MSKU3344556", status: "VALIDATED_SIDUNEA", canal: "ROJO", type: "FCL STANDARD", port: "Puerto Cabello" },
+        { id: "MBL_3", mbl: "CMAU77778888", vessel: "CMA CGM MARSEILLE", container: "TGBU8989123", status: "PENDIENTE", canal: "AMARILLO", type: "FCL STANDARD", port: "La Guaira" }
+      ];
+      masterBls.forEach(docData => {
+        const docRef = doc(collection(db, "master_bls"), docData.id);
+        batch.set(docRef, docData);
+      });
+
+      // 2. Seed House BLs
+      const houseBls = [
+        { id: "HBL_1", masterId: "MBL_1", hbl: "HBL-001A", consignee: "TECNOLOGÍA CARACAS C.A.", packages: 12, weight: 2.5, description: "Electrónicos", status: "PENDIENTE" },
+        { id: "HBL_2", masterId: "MBL_1", hbl: "HBL-001B", consignee: "IMPORTACIONES LARA", packages: 4, weight: 0.8, description: "Repuestos Auto", status: "PENDIENTE" }
+      ];
+      houseBls.forEach(docData => {
+        const docRef = doc(collection(db, "house_bls"), docData.id);
+        batch.set(docRef, docData);
+      });
+
+      // 3. Seed hitos_legales 
+      const hitos = [
+        { id: "DUA-9876543", status: "PENDIENTE_INSPECCION", createdAt: new Date().toISOString(), mblId: "MBL_3", ente: "SENIAT", tipo: "FCL STANDARD" },
+        { id: "DUA-1112223", status: "APROBADO", createdAt: new Date().toISOString(), mblId: "MBL_2", ente: "INSAI", tipo: "FCL STANDARD" }
+      ];
+      hitos.forEach(docData => {
+        const docRef = doc(collection(db, "hitos_legales"), docData.id);
+        batch.set(docRef, docData);
+      });
+
+      // 4. Seed containers in AGD
+      const containersAgd = [
+        { id: "ZCSU9988112", mblId: "MBL_1", status: "AGD", daysInPort: 15, freeDays: 14, overstayDays: 1, type: "LCL POR DIVIDIR", port: "Puerto Cabello" },
+        { id: "MSKU3344556", mblId: "MBL_2", status: "AGD", daysInPort: 8, freeDays: 14, overstayDays: 0, type: "FCL LISTO GATE", port: "Puerto Cabello" }
+      ];
+      containersAgd.forEach(docData => {
+        const docRef = doc(collection(db, "containers_agd"), docData.id);
+        batch.set(docRef, docData);
+      });
+
+      const das = [
+      { daRef: 'DA-2026-004', vessel: 'CMA CGM MAZARINE', port: 'Puerto Cabello', callDate: '14/06/2026', amount: 45230.00 },
+      { daRef: 'DA-2026-005', vessel: 'MSC ROSARIA', port: 'La Guaira', callDate: '16/06/2026', amount: 20100.50 }
+    ];
+    for (const d of das) {
+       batch.set(doc(collection(db, "armador_das")), d);
+    }
+
+    const exportBookings = [
+       { bookingRef: 'BKG-99887766', destination: 'Róterdam, NL', vessel: 'MSC LISBOA', seniatStatus: 'PERMISO SENIAT LISTO', patioStatus: 'EN PATIO', docsClosingDate: '18/06/2026 14:00' },
+       { bookingRef: 'BKG-11223344', destination: 'Miami, USA', vessel: 'SEALAND GUARDIAN', seniatStatus: 'PENDIENTE SENIAT', patioStatus: 'GATE IN', docsClosingDate: '20/06/2026 09:00' }
+    ];
+    for (const b of exportBookings) {
+       batch.set(doc(collection(db, "export_bookings")), b);
+    }
+
+    const eirOrders = [
+       { eir: 'EIR-776655', container: 'SUDU9988776', type: "40' HC", destination: 'Zona Industrial Valencia, Edo. Carabobo', window: 'Ventana Tarde', status: 'EN RUTA AL PUERTO', placa: 'A12BC3D' },
+       { eir: 'EIR-223344', container: 'MSKU1122334', type: "20' DRY", destination: 'Caracas, Distrito Capital', window: 'Ventana Mañana', status: 'ASIGNADA', placa: 'X98YZ7W' }
+    ];
+    for (const eir of eirOrders) {
+       batch.set(doc(collection(db, "eir_orders")), eir);
+    }
+
+    const portCalls = [
+        { name: 'ZIM LUANDA', voyageNumber: 'V203', location: 'Muelle 22', status: 'En Operación', createdAt: new Date().toISOString(), port: "Puerto Cabello" },
+        { name: 'MSC ROSARIA', voyageNumber: 'V101', location: 'Rada', status: 'Programado', createdAt: new Date().toISOString(), port: "Puerto Cabello" }
+    ];
+    for (const pc of portCalls) {
+        batch.set(doc(collection(db, "portcalls")), pc);
+    }
+
+    const contenedores = [
+        { containerId: 'ZCSU9988112', type: "40' HC", location: 'A-12-3', status: 'Disponible', isBlocked: false },
+        { containerId: 'MSKU3344556', type: "20' DV", location: 'B-04-1', status: 'Disponible', isBlocked: true }
+    ];
+    for (const c of contenedores) {
+        batch.set(doc(collection(db, "contenedores")), c);
+    }
+
+    await batch.commit();
+      res.json({ success: true, message: "Database seeded successfully." });
+    } catch(e: any) {
+      console.error("Seeding error:", e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   startAisStream();
   startAutonomousJobs();
   
@@ -164,11 +347,109 @@ async function startServer() {
     res.json({ success: true, data: competitorCapacity });
   });
 
+  app.post("/api/portcalls/update-status", async (req, res) => {
+    try {
+        const { portCallId, newStatus, vesselName } = req.body;
+        if (!portCallId || !newStatus) {
+            return res.status(400).json({ success: false, message: "Missing params" });
+        }
+        
+        // 1. Update the portcall
+        const portCallRef = doc(db, "portcalls", portCallId);
+        await updateDoc(portCallRef, { status: newStatus, updatedAt: new Date().toISOString() });
+        
+        // 2. Cascade Effect: Create hitos si el estatus es 'Atracado'
+        if (newStatus === "Atracado" || newStatus === "At Dock" || newStatus === "Atracando") {
+            const batch = writeBatch(db);
+            const entities = ["SENIAT", "INEA", "Guardia Nacional"];
+            
+            entities.forEach(ente => {
+                const docRef = doc(collection(db, "hitos_legales"));
+                batch.set(docRef, {
+                    portCallId: portCallId,
+                    vesselName: vesselName || "Buque",
+                    ente: ente,
+                    status: "PENDIENTE_INSPECCION",
+                    tipo: "ARRIBO_BUQUE",
+                    createdAt: new Date().toISOString()
+                });
+            });
+            await batch.commit();
+            console.log(`[CASCADE ENGINE] Buque atracado: hito legal creado para SENIAT, INEA y Guardia Nacional.`);
+        }
+        
+        res.json({ success: true, message: `Portcall updated to ${newStatus} with cascade effects applied.` });
+    } catch (e: any) {
+        console.error("Error updating portcall status:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/sidunea/selectivity", express.json(), async (req, res) => {
+    try {
+        const { mblId, containerId, importador, vesselName } = req.body;
+        
+        // Simular lógica de selectividad
+        const rand = Math.random();
+        let status = "LIBERADO";  // Verde
+        if (rand > 0.7) status = "PENDIENTE_INSPECCION"; // Rojo
+        else if (rand > 0.5) status = "AMARILLO"; // Amarillo
+        
+        const duaId = `SIM-${Math.floor(Math.random()*1000000)}-${new Date().getFullYear().toString().slice(-2)}`;
+        
+        const hitoData = {
+           mblId: mblId || null,
+           containerId: containerId || null,
+           vesselName: vesselName || "Desconocido",
+           importador: importador || "Importador Default",
+           ente: "SENIAT",
+           tipo: "LEVANTE_IMPORTACION",
+           status, // LIBERADO, PENDIENTE_INSPECCION, AMARILLO (estos matchean el dashboard)
+           createdAt: new Date().toISOString(),
+           updatedAt: new Date().toISOString()
+        };
+        
+        await setDoc(doc(db, "hitos_legales", duaId), hitoData);
+        
+        // Bloquear contenedor si es Rojo/Amarillo en el TOS
+        if (status !== "LIBERADO") {
+            const contQuery = query(collection(db, "contenedores"), where("containerId", "==", containerId));
+            const snap = await getDocs(contQuery);
+            if (!snap.empty) {
+                await updateDoc(snap.docs[0].ref, { isBlocked: true });
+            }
+            
+            // Disparar Telegram a la autoridad
+             if (bot && process.env.TELEGRAM_CHAT_ID) {
+                const opts = {
+                    parse_mode: "Markdown",
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: "✅ Aprobar", callback_data: `APROBAR_HITO_${duaId}` },
+                                { text: "❌ Rechazar", callback_data: `RECHAZAR_HITO_${duaId}` }
+                            ]
+                        ]
+                    }
+                };
+
+                const textMsg = `🚨 *SIDUNEA: CANAL ${status === "AMARILLO" ? "AMARILLO" : "ROJO"}*\n\n*DUA:* ${duaId}\n*Contenedor:* ${containerId}\n*Buque:* ${vesselName}\n*Importador:* ${importador}\n\nRequiere inspección y levante.`;
+                bot.sendMessage(process.env.TELEGRAM_CHAT_ID, textMsg, opts as any).catch(e => console.error("Telegram send error:", e));
+             }
+        }
+        
+        res.json({ success: true, dua: duaId, canal: status === "LIBERADO" ? "Verde" : status === "AMARILLO" ? "Amarillo" : "Rojo" });
+    } catch(e: any) {
+        console.error("Selectivity error:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   // ======= TELEGRAM BOT (REAL) =======
   const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
   let bot: TelegramBot | null = null;
   
-  if (telegramToken && process.env.NODE_ENV !== "production") {
+  if (telegramToken) {
       // In development / container, polling is more reliable if behind NAT
       bot = new TelegramBot(telegramToken, { polling: true });
       console.log("[TELEGRAM] Bot iniciado en modo polling.");
@@ -182,7 +463,7 @@ async function startServer() {
           try {
               if (data.startsWith('APROBAR_HITO_')) {
                   const docId = data.replace('APROBAR_HITO_', '');
-                  await getFirestore().collection('hitos_legales').doc(docId).update({
+                  await updateDoc(doc(db, 'hitos_legales', docId), {
                       status: "APROBADO",
                       updatedAt: new Date().toISOString()
                   });
@@ -192,7 +473,7 @@ async function startServer() {
                   }
               } else if (data.startsWith('RECHAZAR_HITO_')) {
                  const docId = data.replace('RECHAZAR_HITO_', '');
-                  await getFirestore().collection('hitos_legales').doc(docId).update({
+                  await updateDoc(doc(db, 'hitos_legales', docId), {
                       status: "RECHAZADO",
                       updatedAt: new Date().toISOString()
                   });
@@ -202,7 +483,7 @@ async function startServer() {
                   }
               }
           } catch(e) {
-              console.error("[TELEGRAM] Firebase admin error:", e);
+              console.error("[TELEGRAM] Firebase sync error:", e);
               if (chatId) bot.answerCallbackQuery(query.id, { text: "Error de servidor al sincronizar." });
           }
       });

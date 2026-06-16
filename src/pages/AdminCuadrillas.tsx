@@ -56,7 +56,7 @@ export function AdminCuadrillas() {
       const pcSnap = await getDocs(qPc);
       const pcalls: PortCall[] = [];
       pcSnap.forEach((doc) => {
-        pcalls.push({ id: doc.id, ...doc.data() } as PortCall);
+        pcalls.push({ id: doc.id, ...(doc.data() as any) } as PortCall);
       });
       setPortCalls(pcalls);
 
@@ -68,7 +68,7 @@ export function AdminCuadrillas() {
       const snap = await getDocs(qCrews);
       const list: Crew[] = [];
       snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as Crew);
+        list.push({ id: doc.id, ...(doc.data() as any) } as Crew);
       });
       setCrews(list);
     } catch (e) {

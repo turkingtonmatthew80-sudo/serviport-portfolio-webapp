@@ -7,6 +7,18 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { AdminContador } from "./AdminContador";
+import {
+  DespachadorBuquesDashboard,
+  OficialBuquesDashboard,
+  InspectorPuertaDashboard,
+  PlanificadorPatioDashboard,
+  CoordinadorTraficoDashboard,
+  AgenteDocumentacionDashboard,
+  FacturadorDashboard,
+  SupervisorHSEDashboard,
+  EstibadorDashboard,
+  AnalistaBIDashboard
+} from "./AdminRoleDashboards";
 
 export function AdminDashboard() {
   const { adminUser } = useAdminAuth();
@@ -40,12 +52,17 @@ export function AdminDashboard() {
       {adminUser.role === "GERENTE_GENERAL" && <SuperAdminDashboard />}
       {adminUser.role === "GERENTE_OPERACIONES" && <GerenteDashboard />}
       {adminUser.role === "CONTADOR" && <AdminContador />}
-      {["PLANIFICADOR_PATIO", "DESPACHADOR_BUQUES", "OFICIAL_BUQUES", "INSPECTOR_PUERTA", "ESTIBADOR", "COORDINADOR_TRAFICO", "AGENTE_DOCUMENTACION"].includes(adminUser.role) && (
-        <div className="bg-white p-8 border border-border rounded shadow-sm text-center mt-12">
-          <p className="text-primary font-bold tracking-widest uppercase font-mono mb-2 text-xl">SISTEMA TOS ACTIVO</p>
-          <p className="text-foreground-muted">Utiliza el menú lateral para acceder a tu herramienta operativa y proceder con los registros en la base de datos.</p>
-        </div>
-      )}
+      {adminUser.role === "DESPACHADOR_BUQUES" && <DespachadorBuquesDashboard />}
+      {adminUser.role === "OFICIAL_BUQUES" && <OficialBuquesDashboard />}
+      {adminUser.role === "INSPECTOR_PUERTA" && <InspectorPuertaDashboard />}
+      {adminUser.role === "PLANIFICADOR_PATIO" && <PlanificadorPatioDashboard />}
+      {adminUser.role === "COORDINADOR_TRAFICO" && <CoordinadorTraficoDashboard />}
+      {adminUser.role === "AGENTE_DOCUMENTACION" && <AgenteDocumentacionDashboard />}
+      {adminUser.role === "FACTURADOR" && <FacturadorDashboard />}
+      {adminUser.role === "SUPERVISOR_HSE" && <SupervisorHSEDashboard />}
+      {adminUser.role === "ESTIBADOR" && <EstibadorDashboard />}
+      {adminUser.role === "ANALISTA_BI" && <AnalistaBIDashboard />}
+      
     </div>
   );
 }
@@ -75,7 +92,7 @@ function SuperAdminDashboard() {
              const logsQ = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), limit(5));
              const logsSnap = await getDocs(logsQ);
              const loadedLogs: any[] = [];
-             logsSnap.forEach(doc => loadedLogs.push({ id: doc.id, ...doc.data() }));
+             logsSnap.forEach(doc => loadedLogs.push({ id: doc.id, ...(doc.data() as any) }));
              setLogs(loadedLogs);
          } catch(e) {
              console.error(e);
@@ -182,7 +199,7 @@ function GerenteDashboard() {
              const bSnap = await getDocs(qB);
              const pcList: any[] = [];
              bSnap.forEach(doc => {
-                 pcList.push({ id: doc.id, ...doc.data() });
+                 pcList.push({ id: doc.id, ...(doc.data() as any) });
              });
              setPortcalls(pcList);
 

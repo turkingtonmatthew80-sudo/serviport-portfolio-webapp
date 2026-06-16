@@ -118,7 +118,7 @@ export function AdminBuques() {
         unsubscribePortCalls = onSnapshot(qPortCalls, (snap: any) => {
           const loadedPortCalls: PortCall[] = [];
           snap.forEach((doc: any) => {
-            loadedPortCalls.push({ id: doc.id, ...doc.data() } as PortCall);
+            loadedPortCalls.push({ id: doc.id, ...(doc.data() as any) } as PortCall);
           });
           setBuques(loadedPortCalls);
           if (loadedPortCalls.length > 0 && !selectedBuqueId) {
@@ -132,7 +132,7 @@ export function AdminBuques() {
         unsubscribeB2b = onSnapshot(qB2b, (snap) => {
           const loadedB2B: B2BPortCall[] = [];
           snap.forEach(doc => {
-            loadedB2B.push({ id: doc.id, ...doc.data() } as B2BPortCall);
+            loadedB2B.push({ id: doc.id, ...(doc.data() as any) } as B2BPortCall);
           });
           setB2bRequests(loadedB2B);
         });
@@ -145,7 +145,7 @@ export function AdminBuques() {
         unsubscribeCrews = onSnapshot(qCrews, (snap: any) => {
           const loadedCrews: StevedoreCrew[] = [];
           snap.forEach((doc: any) => {
-            loadedCrews.push({ id: idClean(doc.id), ...doc.data() } as StevedoreCrew);
+            loadedCrews.push({ id: idClean(doc.id), ...(doc.data() as any) } as StevedoreCrew);
           });
           setCrews(loadedCrews);
         });
@@ -176,7 +176,7 @@ export function AdminBuques() {
         const unsub = onSnapshot(qC, (snap) => {
           const loadedCons: ContainerItem[] = [];
           snap.forEach(doc => {
-             loadedCons.push({ id: doc.id, ...doc.data() } as ContainerItem);
+             loadedCons.push({ id: doc.id, ...(doc.data() as any) } as ContainerItem);
           });
           setContainers(loadedCons);
           setIsLoadingContainers(false);

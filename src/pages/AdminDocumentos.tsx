@@ -2,45 +2,69 @@ import { useState, useEffect } from "react";
 import { Box, FileText, Search, Download, Layers, ShieldCheck, ArrowRight, Truck, Database, Bot, RefreshCcw, CheckSquare, XCircle, Send } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { db } from "../lib/firebase";
-import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, serverTimestamp, collection, query, where, getDocs, getDoc } from "firebase/firestore";
 
 export function AdminDocumentos() {
   const { adminUser } = useAdminAuth();
   
-  const [showDeconsolidate, setShowDeconsolidate] = useState(false);
+  const [showDeconsolidate, setShowDeconsolidate] = useState<string | null>(null);
   const [scraperStatus, setScraperStatus] = useState<"idle" | "running" | "done">("idle");
   const [scrapedData, setScrapedData] = useState<any[]>([]);
 
-  // Orchestration state
-  const [duaStatus, setDuaStatus] = useState<string>("PENDIENTE_INSPECCION");
+  const [masterBls, setMasterBls] = useState<any[]>([]);
+  const [hitos, setHitos] = useState<any[]>([]);
+  const [containersAgd, setContainersAgd] = useState<any[]>([]);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   useEffect(() => {
-     const unsub = onSnapshot(doc(db, "hitos_legales", "DUA-9876543"), (doc) => {
-        if (doc.exists()) {
-           setDuaStatus(doc.data().status || "PENDIENTE_INSPECCION");
-        }
-     });
-     return () => unsub();
-  }, []);
+     let unsubMbl = () => {};
+     let unsubHitos = () => {};
+     let unsubContainers = () => {};
 
-  const emitBroadcast = async () => {
+     const fetchAll = async () => {
+         const qMbl = query(collection(db, "master_bls"), where("port", "==", adminUser?.port || "Puerto Cabello"));
+         unsubMbl = onSnapshot(qMbl, (snap) => setMasterBls(snap.docs.map(d => ({...d.data(), gid: d.id}))));
+
+         unsubHitos = onSnapshot(collection(db, "hitos_legales"), (snap) => setHitos(snap.docs.map(d => ({...d.data(), gid: d.id}))));
+
+         const qContainers = query(collection(db, "containers_agd"), where("port", "==", adminUser?.port || "Puerto Cabello"));
+         unsubContainers = onSnapshot(qContainers, (snap) => setContainersAgd(snap.docs.map(d => ({...d.data(), gid: d.id}))));
+     }
+
+     if (adminUser) fetchAll();
+
+     return () => {
+         unsubMbl();
+         unsubHitos();
+         unsubContainers();
+     };
+  }, [adminUser]);
+
+  const emitBroadcast = async (hitoId: string, mblId: string) => {
       setIsBroadcasting(true);
       try {
-          await setDoc(doc(db, "hitos_legales", "DUA-9876543"), {
+          const mblDoc = await getDoc(doc(db, "master_bls", mblId));
+          let vName = "Desconocido";
+          let cName = "Desc";
+          if (mblDoc.exists()) {
+             vName = mblDoc.data().vessel;
+             cName = mblDoc.data().container;
+          }
+
+          await setDoc(doc(db, "hitos_legales", hitoId), {
               status: "PENDING",
               createdAt: serverTimestamp()
-          });
+          }, { merge: true });
 
           await fetch("/api/telegram/send-approval", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                  docId: "DUA-9876543",
+                  docId: hitoId,
                   ente: "SENIAT",
-                  titulo: "Inspección Física DUA-9876543",
-                  vesselName: "Aduanas C.A.",
-                  detalles: "Contenedor TGBU8989123"
+                  titulo: `Inspección Física ${hitoId}`,
+                  vesselName: vName,
+                  detalles: `Contenedor ${cName}`
               })
           });
       } catch(e) {
@@ -50,16 +74,51 @@ export function AdminDocumentos() {
       }
   };
 
-  const runSiduneaScraper = () => {
+  const runSiduneaScraper = async () => {
     setScraperStatus("running");
     setScrapedData([]);
-    setTimeout(() => {
-      setScrapedData([
-        { bl: "ZIMU12345678", status: "VALIDATED_SIDUNEA", canal: "VERDE", taxes: "PAGADO" },
-        { bl: "MSKU33445566", status: "PENDING_DUA", canal: "ROJO", taxes: "PENDIENTE" }
-      ]);
-      setScraperStatus("done");
-    }, 3500);
+    
+    try {
+        const results = [];
+        // Tomaremos los primeros 3 contenedores activos sin seleccionar
+        const pendingContainers = containersAgd.slice(0, 3);
+        
+        for (const container of pendingContainers) {
+             const mblRef = masterBls.find(m => m.container === container.containerId);
+             
+             const response = await fetch("/api/sidunea/selectivity", {
+                 method: "POST",
+                 headers: { "Content-Type" : "application/json" },
+                 body: JSON.stringify({
+                     mblId: mblRef ? mblRef.gid : null,
+                     containerId: container.containerId,
+                     importador: mblRef ? "Consignatario BL" : "Importador General",
+                     vesselName: mblRef ? mblRef.vessel : "Buque TBD"
+                 })
+             });
+             const data = await response.json();
+             
+             if (data.success) {
+                 results.push({
+                     bl: container.containerId,
+                     status: "VALIDATED_SIDUNEA",
+                     canal: data.canal.toUpperCase(),
+                     taxes: data.canal === "Verde" ? "PAGADO" : "EN REVISIÓN"
+                 });
+             }
+        }
+        
+        setScrapedData(results.length > 0 ? results : [{
+          bl: "SIMULADO (No hay Contenedores AGD)",
+          status: "VALIDATED_SIDUNEA",
+          canal: "ROJO",
+          taxes: "SIMULACIÓN"
+        }]);
+    } catch(e) {
+        console.error("Scraper Error", e);
+    } finally {
+        setScraperStatus("done");
+    }
   };
 
   return (
@@ -157,60 +216,75 @@ export function AdminDocumentos() {
                  </tr>
                </thead>
                <tbody>
-                 <tr className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                   <td className="px-6 py-4">
-                     <div className="flex flex-col gap-1">
-                        <span className="font-bold text-secondary font-mono">M-BL: ZIMU12345678</span>
-                        <span className="text-[10px] text-orange-600 bg-orange-100 px-1 border border-orange-200 rounded w-fit font-bold uppercase tracking-widest">LCL CONSOLIDADO</span>
-                     </div>
-                   </td>
-                   <td className="px-6 py-4 font-mono text-secondary text-xs">ZIM LUANDA (V203)<br/><span className="text-foreground-muted font-sans text-xs">Contenedor: ZCSU9988112</span></td>
-                   <td className="px-6 py-4">
-                     <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">Canal Verde</span>
-                   </td>
-                   <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
-                     <button 
-                         onClick={() => setShowDeconsolidate(true)}
-                         className="flex items-center gap-1 text-[10px] bg-slate-100 border border-border px-2 py-1.5 font-bold uppercase text-slate-700 hover:bg-slate-200 rounded transition-colors"
-                     >
-                       <Layers size={14} /> Desconsolidar H-BL
-                     </button>
-                     <button className="text-primary hover:text-primary-hover p-1.5 border border-primary/20 rounded">
-                       <Download size={14} />
-                     </button>
-                   </td>
-                 </tr>
-                 <tr className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                   <td className="px-6 py-4">
-                     <div className="flex flex-col gap-1">
-                        <span className="font-bold text-secondary font-mono">DUA-9876543</span>
-                        <span className="text-[10px] text-blue-600 bg-blue-100 px-1 border border-blue-200 rounded w-fit font-bold uppercase tracking-widest">FCL STANDARD</span>
-                     </div>
-                   </td>
-                   <td className="px-6 py-4 font-mono text-secondary text-xs">Aduanas C.A.<br/><span className="text-foreground-muted font-sans text-xs">Contenedor: TGBU8989123</span></td>
-                   <td className="px-6 py-4">
-                      {duaStatus === "APROBADO" ? (
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">APROBADO / LEVANTE</span>
-                      ) : duaStatus === "RECHAZADO" ? (
-                          <span className="bg-red-900 text-red-100 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">RECHAZADO SENIAT</span>
-                      ) : (
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">Canal Rojo / Inspección</span>
-                      )}
-                   </td>
-                   <td className="px-6 py-4 text-right flex justify-end gap-2 text-right">
-                      <button 
-                         onClick={emitBroadcast}
-                         disabled={isBroadcasting || duaStatus === "PENDING" || duaStatus === "APROBADO" || duaStatus === "RECHAZADO"}
-                         className="flex items-center gap-1 text-[10px] bg-[#0088cc] text-white px-2 py-1.5 font-bold uppercase hover:bg-[#0077b3] disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors shadow"
-                      >
-                         <Send size={14} /> 
-                         {duaStatus === "PENDING" ? "ENVIADO A TELEGRAM" : "EMITIR BROADCAST OFICIAL"}
-                      </button>
-                     <button className="text-primary hover:text-primary-hover p-1.5 border border-primary/20 rounded">
-                       <Download size={14} />
-                     </button>
-                   </td>
-                 </tr>
+                  {masterBls.map(mbl => (
+                    <tr key={mbl.gid} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                           <span className="font-bold text-secondary font-mono">M-BL: {mbl.mbl}</span>
+                           <span className={`text-[10px] px-1 border rounded w-fit font-bold uppercase tracking-widest ${mbl.type === 'LCL CONSOLIDADO' ? 'text-orange-600 bg-orange-100 border-orange-200' : 'text-blue-600 bg-blue-100 border-blue-200'}`}>{mbl.type || 'DESCONOCIDO'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-secondary text-xs">{mbl.vessel}<br/><span className="text-foreground-muted font-sans text-xs">Contenedor: {mbl.container}</span></td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono ${mbl.canal === 'VERDE' ? 'bg-emerald-100 text-emerald-800' : mbl.canal === 'AMARILLO' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{mbl.canal ? `Canal ${mbl.canal}` : 'SIN CANAL'}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                        {mbl.type === "LCL CONSOLIDADO" && (
+                          <button 
+                              onClick={() => setShowDeconsolidate(mbl.gid)}
+                              className="flex items-center gap-1 text-[10px] bg-slate-100 border border-border px-2 py-1.5 font-bold uppercase text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                          >
+                            <Layers size={14} /> Desconsolidar H-BL
+                          </button>
+                        )}
+                        <button className="text-primary hover:text-primary-hover p-1.5 border border-primary/20 rounded">
+                          <Download size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  
+                  {hitos.map(hito => {
+                     const relatedMbl = masterBls.find(m => m.gid === hito.mblId) || {};
+                     return (
+                     <tr key={hito.gid} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                       <td className="px-6 py-4">
+                         <div className="flex flex-col gap-1">
+                            <span className="font-bold text-secondary font-mono">{hito.gid}</span>
+                            <span className="text-[10px] text-blue-600 bg-blue-100 px-1 border border-blue-200 rounded w-fit font-bold uppercase tracking-widest">{hito.tipo || "FCL STANDARD"}</span>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 font-mono text-secondary text-xs">{hito.ente} ({relatedMbl.vessel || 'N/A'})<br/><span className="text-foreground-muted font-sans text-xs">Contenedor: {relatedMbl.container || 'N/A'}</span></td>
+                       <td className="px-6 py-4">
+                          {hito.status === "APROBADO" ? (
+                              <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">APROBADO / LEVANTE</span>
+                          ) : hito.status === "RECHAZADO" ? (
+                              <span className="bg-red-900 text-red-100 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">RECHAZADO SENIAT</span>
+                          ) : (
+                              <span className="bg-red-100 text-red-800 px-2 py-1 rounded font-bold text-[9px] tracking-widest uppercase font-mono">Canal Rojo / Inspección</span>
+                          )}
+                       </td>
+                       <td className="px-6 py-4 text-right flex justify-end gap-2 text-right">
+                          <button 
+                             onClick={() => emitBroadcast(hito.gid, hito.mblId)}
+                             disabled={isBroadcasting || hito.status === "PENDING" || hito.status === "APROBADO" || hito.status === "RECHAZADO"}
+                             className="flex items-center gap-1 text-[10px] bg-[#0088cc] text-white px-2 py-1.5 font-bold uppercase hover:bg-[#0077b3] disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors shadow"
+                          >
+                             <Send size={14} /> 
+                             {hito.status === "PENDING" ? "ENVIADO A TELEGRAM" : "EMITIR BROADCAST OFICIAL"}
+                          </button>
+                         <button className="text-primary hover:text-primary-hover p-1.5 border border-primary/20 rounded">
+                           <Download size={14} />
+                         </button>
+                       </td>
+                     </tr>
+                     )
+                  })}
+                  {masterBls.length === 0 && hitos.length === 0 && (
+                     <tr>
+                         <td colSpan={4} className="px-6 py-8 text-center text-slate-500 font-mono">No hay documentos en este puerto.</td>
+                     </tr>
+                  )}
                </tbody>
              </table>
            </div>
@@ -223,75 +297,56 @@ export function AdminDocumentos() {
             <h3 className="font-mono text-sm tracking-widest font-bold text-slate-400 mb-6 relative z-10">CONTENEDORES EN AGD</h3>
             
             <div className="space-y-4 relative z-10">
-               <div className="border border-slate-800 p-3 bg-slate-950/50 rounded flex justify-between items-center">
-                  <div>
-                    <p className="font-mono font-bold text-emerald-400 text-sm">ZCSU9988112</p>
-                    <p className="text-[10px] text-slate-500 font-sans">15 Días (Sobreestadía: 1 día)</p>
-                  </div>
-                  <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-0.5 rounded border border-orange-500/50 font-mono">LCL POR DIVIDIR</span>
-               </div>
-               
-               <div className="border border-slate-800 p-3 bg-slate-950/50 rounded flex justify-between items-center">
-                  <div>
-                    <p className="font-mono font-bold text-emerald-400 text-sm">MSKU3344556</p>
-                    <p className="text-[10px] text-slate-500 font-sans">8 Días (Restan: 6 días Libres)</p>
-                  </div>
-                  <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/50 font-mono">FCL LISTO GATE</span>
-               </div>
+               {containersAgd.map(c => (
+                 <div key={c.gid} className="border border-slate-800 p-3 bg-slate-950/50 rounded flex justify-between items-center">
+                    <div>
+                      <p className="font-mono font-bold text-emerald-400 text-sm">{c.id || c.gid}</p>
+                      <p className="text-[10px] text-slate-500 font-sans">{c.daysInPort} Días ({c.overstayDays > 0 ? `Sobreestadía: ${c.overstayDays} día(s)` : `Restan: ${c.freeDays - c.daysInPort} días Libres`})</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border font-mono ${c.type === 'LCL POR DIVIDIR' ? 'bg-orange-500/20 text-orange-400 border-orange-500/50' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'}`}>{c.type || 'AGD'}</span>
+                 </div>
+               ))}
+               {containersAgd.length === 0 && (
+                 <p className="text-sm text-slate-500 font-mono italic">No hay contenedores en AGD.</p>
+               )}
             </div>
          </div>
       </div>
 
-      {showDeconsolidate && (
+      {showDeconsolidate && (() => {
+         const targetMbl = masterBls.find(m => m.gid === showDeconsolidate);
+         if (!targetMbl) return null;
+         return (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
            <div className="bg-white rounded max-w-2xl w-full border border-border shadow-2xl">
               <div className="p-6 border-b border-border bg-slate-50 flex justify-between items-center">
                  <div>
                     <h3 className="font-black text-secondary font-mono uppercase tracking-tight text-xl">Confirmar Desconsolidación LCL</h3>
-                    <p className="text-xs text-foreground-muted font-sans mt-1">M-BL: ZIMU12345678 (Contenedor ZCSU9988112)</p>
+                    <p className="text-xs text-foreground-muted font-sans mt-1">M-BL: {targetMbl.mbl} (Contenedor {targetMbl.container})</p>
                  </div>
-                 <button onClick={() => setShowDeconsolidate(false)} className="text-slate-400 hover:text-slate-700 font-bold p-2 text-xl">&times;</button>
+                 <button onClick={() => setShowDeconsolidate(null)} className="text-slate-400 hover:text-slate-700 font-bold p-2 text-xl">&times;</button>
               </div>
 
               <div className="p-6 space-y-6">
                  <p className="text-sm text-foreground-muted bg-blue-50 border border-blue-200 p-3 rounded font-mono text-blue-900">
-                    Al proceder, el contenedor físico (ZCSU9988112) pasará al AGD virtual como <strong className="font-black">Vacío Pendiente de Devolución</strong>, y la carga se subdividirá en bultos (House BLs) para despacho a transportistas separados.
+                    Al proceder, el contenedor físico ({targetMbl.container}) pasará al AGD virtual como <strong className="font-black">Vacío Pendiente de Devolución</strong>, y la carga se subdividirá en bultos (House BLs) para despacho a transportistas separados.
                  </p>
                  
                  <div className="space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div className="flex-1">
-                           <p className="text-sm font-bold font-mono text-secondary">H-BL: HBL-001A</p>
-                           <p className="text-xs text-slate-500">Consignatario: TECNOLOGÍA CARACAS C.A.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <span className="bg-slate-100 text-slate-700 text-[10px] font-bold font-mono px-2 py-1 rounded">12 BULTOS / 2.5 Tons</span>
-                           <Truck size={14} className="text-foreground-muted" />
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div className="flex-1">
-                           <p className="text-sm font-bold font-mono text-secondary">H-BL: HBL-001B</p>
-                           <p className="text-xs text-slate-500">Consignatario: IMPORTACIONES LARA</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <span className="bg-slate-100 text-slate-700 text-[10px] font-bold font-mono px-2 py-1 rounded">4 BULTOS / 0.8 Tons</span>
-                           <Truck size={14} className="text-foreground-muted" />
-                        </div>
-                    </div>
+                    <p className="text-xs text-slate-500 font-mono">Los bultos serían obtenidos dinámicamente de sus House BLs asociados.</p>
                  </div>
               </div>
 
               <div className="p-6 border-t border-border bg-slate-50 flex justify-end gap-3">
-                 <button onClick={() => setShowDeconsolidate(false)} className="px-4 py-2 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors rounded">Cancelar</button>
-                 <button onClick={() => setShowDeconsolidate(false)} className="px-4 py-2 bg-primary text-white font-bold text-xs uppercase tracking-widest hover:bg-primary-hover transition-colors rounded shadow-sm flex items-center gap-2">
+                 <button onClick={() => setShowDeconsolidate(null)} className="px-4 py-2 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors rounded">Cancelar</button>
+                 <button onClick={() => setShowDeconsolidate(null)} className="px-4 py-2 bg-primary text-white font-bold text-xs uppercase tracking-widest hover:bg-primary-hover transition-colors rounded shadow-sm flex items-center gap-2">
                     <ArrowRight size={14} /> Registrar Desconsolidación ALMACÉN (AGD)
                  </button>
               </div>
            </div>
         </div>
-      )}
+         );
+      })()}
     </div>
   );
 }

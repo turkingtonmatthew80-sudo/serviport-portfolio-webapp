@@ -86,12 +86,12 @@ export function PortalLayout() {
           icon: LayoutDashboard,
         },
         {
-          name: "Cuentas Liquidación",
-          path: "/portal/armador/disbursements",
+          name: "Cuentas y DA",
+          path: "/portal/armador/cuentas",
           icon: FileText,
         },
         {
-          name: "Husbandry",
+          name: "Husbandry / Servicios",
           path: "/portal/armador/husbandry",
           icon: PlusCircle,
         },
@@ -214,23 +214,7 @@ export function PortalLayout() {
     });
   }
 
-  if (user.roles.includes("armador")) {
-    groups.push({
-      title: "ARMADOR",
-      items: [
-        {
-          name: "Dashboard Armador",
-          path: "/portal/armador/dashboard",
-          icon: LayoutDashboard,
-        },
-        {
-          name: "Aprobación DA",
-          path: "/portal/armador/cuentas",
-          icon: FileText,
-        },
-      ],
-    });
-  }
+
 
   groups.push({
     title: "GENERAL",

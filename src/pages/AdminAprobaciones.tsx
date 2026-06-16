@@ -35,7 +35,7 @@ export function AdminAprobaciones() {
         }
         const snap = await getDocs(qApprovals);
         const loaded: ApprovalRef[] = [];
-        snap.forEach(doc => loaded.push({ id: doc.id, ...doc.data() } as ApprovalRef));
+        snap.forEach(doc => loaded.push({ id: doc.id, ...(doc.data() as any) } as ApprovalRef));
         setApprovals(loaded);
 
         let qPortcalls: any = collection(db, "portcalls");
@@ -45,8 +45,8 @@ export function AdminAprobaciones() {
         const pcSnap = await getDocs(qPortcalls);
         const pcLoaded: any[] = [];
         pcSnap.forEach(doc => {
-           if(doc.data().status === "Programado") {
-              pcLoaded.push({ id: doc.id, ...doc.data() });
+           if((doc.data() as any).status === "Programado") {
+              pcLoaded.push({ id: doc.id, ...(doc.data() as any) });
            }
         });
         setPortcalls(pcLoaded);

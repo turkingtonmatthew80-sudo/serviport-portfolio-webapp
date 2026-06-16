@@ -36,6 +36,7 @@ interface DBContainer {
   weight?: number;
   sealNumber?: string;
   lineOperator?: string;
+  isBlocked?: boolean;
 }
 
 interface GateEvent {
@@ -149,10 +150,21 @@ export function AdminGate() {
          qEvents = query(collection(db, "gate_events"), orderBy("timestamp", "desc"), limit(25));
       }
       
-      const eventsSnap = await getDocs(qEvents);
+      let eventsSnap;
+      try {
+        eventsSnap = await getDocs(qEvents);
+      } catch (err: any) {
+        console.warn("Index missing for gate_events, falling back to unordered", err);
+        if (adminUser && adminUser.port !== "GLOBAL") {
+           qEvents = query(collection(db, "gate_events"), where("port", "==", adminUser.port), limit(50));
+        } else {
+           qEvents = query(collection(db, "gate_events"), limit(50));
+        }
+        eventsSnap = await getDocs(qEvents);
+      }
       const events: GateEvent[] = [];
       eventsSnap.forEach(doc => {
-        events.push({ id: doc.id, ...doc.data() } as GateEvent);
+        events.push({ id: doc.id, ...(doc.data() as any) } as GateEvent);
       });
       setHistory(events);
 
@@ -164,7 +176,7 @@ export function AdminGate() {
       const consSnap = await getDocs(qContainers);
       const cons: DBContainer[] = [];
       consSnap.forEach(doc => {
-        cons.push({ id: doc.id, ...doc.data() } as DBContainer);
+        cons.push({ id: doc.id, ...(doc.data() as any) } as DBContainer);
       });
       setDbContainers(cons);
 
@@ -1067,13 +1079,22 @@ export function AdminGate() {
                                             </span>
                                          </td>
                                          <td className="py-3 px-5 text-right">
-                                            <button 
-                                              disabled={isLoading}
-                                              onClick={() => handleSubmitGateOut(c)}
-                                              className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-extrabold font-mono tracking-wider text-[9.5px] uppercase rounded transition-colors disabled:opacity-50 inline-flex items-center gap-1 leading-none shadow-sm"
-                                            >
-                                               <ArrowRight size={12} /> Despachar Gate-Out
-                                            </button>
+                                            {c.isBlocked ? (
+                                               <div className="flex flex-col items-end gap-1">
+                                                  <span className="text-[9px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded tracking-widest uppercase flex items-center gap-1">
+                                                     <AlertTriangle size={10} /> SIN LEVANTE
+                                                  </span>
+                                                  <span className="text-[8px] text-slate-500 font-sans">Bloqueo SIDUNEA/ADUANA</span>
+                                               </div>
+                                            ) : (
+                                               <button 
+                                                 disabled={isLoading}
+                                                 onClick={() => handleSubmitGateOut(c)}
+                                                 className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-extrabold font-mono tracking-wider text-[9.5px] uppercase rounded transition-colors disabled:opacity-50 inline-flex items-center gap-1 leading-none shadow-sm"
+                                               >
+                                                  <ArrowRight size={12} /> Despachar Gate-Out
+                                               </button>
+                                            )}
                                          </td>
                                       </tr>
                                    ))

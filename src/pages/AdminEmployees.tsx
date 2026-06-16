@@ -68,7 +68,7 @@ export function AdminEmployees() {
       const snap = await getDocs(collection(db, "employees"));
       const list: Employee[] = [];
       snap.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() } as Employee);
+        list.push({ id: doc.id, ...(doc.data() as any) } as Employee);
       });
       setEmployees(list);
     } catch (error) {
