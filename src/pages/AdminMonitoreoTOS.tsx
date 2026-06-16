@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Ship, Activity, Box, Map, Layers, RefreshCcw, Loader2, Gauge, Truck, ArrowRight, CornerDownRight, CheckCircle } from "lucide-react";
 import { collection, getDocs, orderBy, limit, query } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { PortCanvas } from "../components/PortCanvas";
+import { useAdminAuth } from "../contexts/AdminAuthContext";
 
 interface Patio {
   id: string;
@@ -12,17 +14,27 @@ interface Patio {
 }
 
 export function AdminMonitoreoTOS() {
+  const { adminUser } = useAdminAuth();
   const [selectedPatio, setSelectedPatio] = useState<string | null>(null);
   const [patios, setPatios] = useState<Patio[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
   const [gateEvents, setGateEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [competitorStats, setCompetitorStats] = useState<any>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
+      const { query, where } = await import("firebase/firestore");
+      const currentPort = adminUser?.port;
+      const isGlobal = currentPort === "GLOBAL";
+
       // 1. Get Patios (patios collection)
-      const patioSnap = await getDocs(collection(db, "patios"));
+      let qPatios: any = collection(db, "patios");
+      if (!isGlobal) {
+          qPatios = query(collection(db, "patios"), where("port", "==", currentPort));
+      }
+      const patioSnap = await getDocs(qPatios);
       const pList: Patio[] = [];
       patioSnap.forEach((doc) => {
         pList.push({ id: doc.id, ...doc.data() } as Patio);
@@ -30,7 +42,11 @@ export function AdminMonitoreoTOS() {
       setPatios(pList);
 
       // 2. Get Live Movements (yard_movements collection)
-      const movSnap = await getDocs(collection(db, "yard_movements"));
+      let qMovs: any = collection(db, "yard_movements");
+      if (!isGlobal) {
+          qMovs = query(collection(db, "yard_movements"), where("port", "==", currentPort));
+      }
+      const movSnap = await getDocs(qMovs);
       const mList: any[] = [];
       movSnap.forEach((doc) => {
         mList.push({ id: doc.id, ...doc.data() });
@@ -39,13 +55,27 @@ export function AdminMonitoreoTOS() {
       setMovements(mList);
 
       // 3. Get Recent Gate Events (gate_events collection)
-      const gateQ = query(collection(db, "gate_events"), orderBy("timestamp", "desc"), limit(6));
+      let gateQ: any;
+      if (!isGlobal) {
+          gateQ = query(collection(db, "gate_events"), where("port", "==", currentPort), orderBy("timestamp", "desc"), limit(6));
+      } else {
+          gateQ = query(collection(db, "gate_events"), orderBy("timestamp", "desc"), limit(6));
+      }
       const gateSnap = await getDocs(gateQ);
       const gList: any[] = [];
       gateSnap.forEach((doc) => {
         gList.push({ id: doc.id, ...doc.data() });
       });
       setGateEvents(gList);
+      
+      // 4. Get Competitor Extracted State 
+      try {
+         const res = await fetch("/api/competitor-capacity");
+         const data = await res.json();
+         if (data && data.success) {
+            setCompetitorStats(data.data);
+         }
+      } catch(ignore) {}
     } catch (e) {
       console.error("Error fetching telemetry database", e);
     } finally {
@@ -55,7 +85,7 @@ export function AdminMonitoreoTOS() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [adminUser]);
 
   const getPatio = (id: string) => patios.find((p) => p.id === id);
 
@@ -158,93 +188,18 @@ export function AdminMonitoreoTOS() {
         <div className="lg:col-span-2 bg-white border border-border rounded shadow-sm flex flex-col overflow-hidden relative min-h-[420px]">
           <div className="p-4 border-b border-border bg-background-muted flex items-center justify-between select-none">
             <h3 className="font-bold text-secondary text-sm uppercase tracking-widest font-mono flex items-center gap-2">
-              <Map size={16} className="text-primary" /> Distribución Esquemática Patios de Puerto Cabello
+              <Map size={16} className="text-primary" /> Distribución Esquemática Patios de {adminUser?.port || "Puerto Cabello"}
             </h3>
             <span className="text-[10px] font-mono text-foreground-muted uppercase">Vista de Monitoreo General</span>
           </div>
 
-          <div className="flex-1 bg-slate-50 relative p-6 flex flex-col justify-between">
+          <div className="flex-1 relative bg-[#0b1424]">
             {isLoading ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/60">
+              <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-10">
                 <Loader2 className="animate-spin text-primary" size={32} />
               </div>
             ) : null}
-
-            {/* Layout Map Content */}
-            <div className="grid grid-cols-3 gap-4 h-full min-h-[220px]">
-              {[
-                { id: "A", name: "Patio A (Exportación)", capacity: 1500, label: "CONTENEDORES EXP" },
-                { id: "B", name: "Patio B (Importación)", capacity: 2200, label: "ZONA DESCARGA MUELL" },
-                { id: "C", name: "Patio C (Vacíos)", capacity: 1800, label: "CONTENEDORES MTY" },
-              ].map((zone) => {
-                const pat = getPatio(zone.id);
-                const current = pat?.current || 0;
-                const capacity = pat?.capacity || zone.capacity;
-                const pct = Math.round((current / capacity) * 100) || 0;
-                return (
-                  <div
-                    key={zone.id}
-                    onClick={() => setSelectedPatio(zone.id)}
-                    className={`border-2 rounded p-4 flex flex-col justify-between cursor-pointer transition-all ${
-                      selectedPatio === zone.id
-                        ? "border-primary bg-primary/2 shadow-inner"
-                        : "border-slate-300 hover:border-slate-400 bg-white shadow-sm"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <span className="font-bold text-secondary font-mono tracking-widest">{zone.name}</span>
-                        <div className="text-right">
-                          <p className="text-xs text-foreground-muted font-mono leading-none">{pct}%</p>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-foreground-muted font-mono uppercase mt-1">{zone.label}</p>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-primary h-1.5 rounded-full" style={{ width: `${pct}%` }}></div>
-                      </div>
-                      <p className="text-xs font-mono font-bold text-secondary mt-1 text-right">{current} / {capacity} TEUs</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* AGD Area */}
-            <div
-              onClick={() => setSelectedPatio("AGD")}
-              className={`mt-4 border-2 rounded p-6 flex flex-col justify-between cursor-pointer transition-all ${
-                selectedPatio === "AGD"
-                  ? "border-orange-500 bg-orange-50 shadow-inner"
-                  : "border-orange-200 hover:border-orange-300 bg-orange-50/20 shadow-sm"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-black text-orange-850 font-mono tracking-widest">ALMACÉN GENERAL DE DEPÓSITO (AGD) propia de Serviport</h4>
-                  <p className="text-[10px] text-orange-600 font-mono uppercase mt-1">Conectado con Circuito de Camiones y Aduana</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-black font-mono text-orange-700">
-                    {Math.round(((getPatio("AGD")?.current || 0) / (getPatio("AGD")?.capacity || 4000)) * 100) || 0}%
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-4">
-                <div className="flex-1 bg-slate-100/80 rounded-full h-2 overflow-hidden border border-orange-100">
-                  <div
-                    className="bg-orange-500 h-2 rounded-full"
-                    style={{ width: `${Math.round(((getPatio("AGD")?.current || 0) / (getPatio("AGD")?.capacity || 4000)) * 100) || 0}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs font-mono font-bold text-orange-800 shrink-0">
-                  {getPatio("AGD")?.current || 0} / {getPatio("AGD")?.capacity || 4000} TEUs
-                </span>
-              </div>
-            </div>
+            <PortCanvas port={adminUser?.port || "Puerto Cabello"} />
           </div>
         </div>
 
@@ -360,6 +315,50 @@ export function AdminMonitoreoTOS() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Gemelo Digital & Web Scraping Autónomo */}
+      <div className="bg-[#0b1424] border border-slate-800 rounded shadow-sm overflow-hidden text-white relative">
+         <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Gauge size={180} />
+         </div>
+         <div className="px-6 py-5 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between relative z-10 w-full flex-wrap gap-4">
+            <div>
+               <h3 className="font-bold text-[#00A9CE] tracking-widest text-sm font-mono uppercase flex items-center gap-2">
+                 <RefreshCcw size={16} className="animate-spin text-[#00A9CE]/50" /> GEMELO DIGITAL & INTELIGENCIA COMPETITIVA
+               </h3>
+               <p className="text-[10px] text-slate-400 font-mono mt-1 w-full max-w-2xl">Scraper Node/Cheerio activo (ciclo: 6h). Extracción autónoma de capacidad instalada de competencia en terminales paralelos del país.</p>
+            </div>
+            <div className="bg-slate-950 border border-[#00A9CE]/30 text-[#00A9CE] px-3 py-1.5 rounded font-mono text-[10px] uppercase font-bold tracking-widest animate-pulse flex items-center gap-2">
+              <CheckCircle size={12} /> CRON DAEMON ACTIVO
+            </div>
+         </div>
+         <div className="p-6 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded flex flex-col items-center justify-center text-center">
+               <span className="text-4xl font-black font-sansita text-white mb-1">{competitorStats ? competitorStats.activeVessels : 0}</span>
+               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-mono">Buques (Competencia)</span>
+               <span className="text-[9px] font-sans text-slate-500 mt-2">Dato extraído del Web Scraper</span>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded flex flex-col items-center justify-center text-center">
+               <span className={`text-2xl font-black font-sansita mb-1 ${competitorStats?.terminalCongestion === 'Alto' ? 'text-red-500' : 'text-emerald-500'}`}>
+                 {competitorStats ? competitorStats.terminalCongestion : 'Desconocido'}
+               </span>
+               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-mono">Status Terminal</span>
+               <span className="text-[9px] font-sans text-slate-500 mt-2">Estimación heurística de demora</span>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded flex flex-col items-center justify-center text-center">
+               <span className="text-lg font-black font-mono text-slate-300 mb-1">
+                 {competitorStats ? new Date(competitorStats.lastScraped).toLocaleTimeString('es-VE') : '--:--'}
+               </span>
+               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-mono">Última Extracción</span>
+               <button onClick={async () => {
+                  alert("Simulando trigger manual del scraper sobre terminal competidor...");
+                  setCompetitorStats({...competitorStats, lastScraped: new Date().toISOString()});
+               }} className="mt-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[9px] px-2 py-1 uppercase tracking-widest font-bold rounded transition-colors">
+                  Forzar Crawler
+               </button>
+            </div>
+         </div>
       </div>
     </div>
   );

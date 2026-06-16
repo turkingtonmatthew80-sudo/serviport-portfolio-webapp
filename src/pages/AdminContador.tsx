@@ -107,8 +107,15 @@ export function AdminContador() {
   const loadAccountingWorkspace = async () => {
     setIsLoading(true);
     try {
+      const currentPort = adminUser?.port;
+      const isGlobal = currentPort === "GLOBAL";
+
       // 1. Fetch official Port Calls
-      const pcSnap = await getDocs(collection(db, "portcalls"));
+      let qB = collection(db, "portcalls");
+      if (!isGlobal) {
+          qB = query(collection(db, "portcalls"), where("port", "==", currentPort)) as any;
+      }
+      const pcSnap = await getDocs(qB);
       const pList: PortCall[] = [];
       pcSnap.forEach(d => {
         pList.push({ id: d.id, ...d.data() } as PortCall);
@@ -116,7 +123,11 @@ export function AdminContador() {
       setPortCalls(pList);
 
       // 2. Fetch Containers for AGD counts and stay fees
-      const conSnap = await getDocs(collection(db, "contenedores"));
+      let qCon = collection(db, "contenedores");
+      if (!isGlobal) {
+          qCon = query(collection(db, "contenedores"), where("port", "==", currentPort)) as any;
+      }
+      const conSnap = await getDocs(qCon);
       const cList: DBContainer[] = [];
       conSnap.forEach(d => {
         const data = d.data();
@@ -157,7 +168,11 @@ export function AdminContador() {
       setTariffs(tList);
 
       // 5. Fetch registered Invoices/Proformas (from persistent Firestore database)
-      const invSnap = await getDocs(collection(db, "invoices"));
+      let qInv = collection(db, "invoices");
+      if (!isGlobal) {
+          qInv = query(collection(db, "invoices"), where("port", "==", currentPort)) as any;
+      }
+      const invSnap = await getDocs(qInv);
       const invList: Invoice[] = [];
       invSnap.forEach(d => {
         invList.push({ id: d.id, ...d.data() } as Invoice);
@@ -351,8 +366,9 @@ export function AdminContador() {
         totalUSD: usdTotal,
         totalVES: usdTotal * exchangeRate,
         isProforma: true,
-        status: "PENDIENTE"
-      };
+        status: "PENDIENTE",
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
+      } as any;
 
       // Set to Firestore Invoices collection
       await setDoc(doc(db, "invoices", newInv.id), newInv);
@@ -364,7 +380,8 @@ export function AdminContador() {
         vesselName: selectedPortCall.name,
         totalUSD: usdTotal,
         status: "pending",
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
       });
 
       // Audit Logger

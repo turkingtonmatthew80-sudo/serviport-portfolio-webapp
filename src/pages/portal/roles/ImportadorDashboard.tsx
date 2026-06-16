@@ -2,7 +2,7 @@ import { Package, Search, Map, LayoutDashboard } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 export function ImportadorDashboard() {
@@ -11,26 +11,27 @@ export function ImportadorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchContainers = async () => {
-      if (!user) return;
-      try {
-        const q = query(
-          collection(db, "contenedores"),
-          where("userId", "==", user.id),
-        );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setContainers(data);
-      } catch (error) {
-        console.error("Error fetching containers:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchContainers();
+    if (!user) return;
+    
+    const q = query(
+      collection(db, "contenedores"),
+      where("userId", "==", user.id),
+    );
+    
+    // Wire up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setContainers(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching containers:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const activeContainers = containers.filter(

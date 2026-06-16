@@ -2,7 +2,7 @@ import { Activity, Anchor, FileText, TrendingUp, Ship } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 export function NavieraDashboard() {
@@ -11,32 +11,32 @@ export function NavieraDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPortCalls = async () => {
-      if (!user) return;
-      try {
-        const q = query(
-          collection(db, "port_calls"),
-          where("userId", "==", user.id),
-        );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as any),
-        }));
+    if (!user) return;
+    
+    const q = query(
+      collection(db, "port_calls"),
+      where("userId", "==", user.id),
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as any),
+      }));
 
-        // Sort explicitly by createdAt or any reasonable mechanism if timestamps exist
-        setPortCalls(
-          data.sort((a, b) =>
-            (b.createdAt || "").localeCompare(a.createdAt || ""),
-          ),
-        );
-      } catch (error) {
-        console.error("Error fetching port calls:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPortCalls();
+      // Sort explicitly by createdAt or any reasonable mechanism if timestamps exist
+      setPortCalls(
+        data.sort((a, b) =>
+          (b.createdAt || "").localeCompare(a.createdAt || ""),
+        ),
+      );
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching port calls:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const actPortCalls = portCalls.filter(

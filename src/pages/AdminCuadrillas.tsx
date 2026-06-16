@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Users, Plus, Trash2, Edit2, Shield, Loader2, RefreshCcw, X, ToggleLeft, ToggleRight, Ship, CalendarClock, Briefcase } from "lucide-react";
+import { Users, Plus, Trash2, Edit2, Shield, Loader2, RefreshCcw, X, ToggleLeft, ToggleRight, Ship, CalendarClock, Briefcase, FileText } from "lucide-react";
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { motion, AnimatePresence } from "motion/react";
+import { generatePayrollPDF } from "../lib/pdfGenerator";
 
 interface Crew {
   id: string;
@@ -43,8 +44,16 @@ export function AdminCuadrillas() {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      const { query, where } = await import("firebase/firestore");
+      const currentPort = adminUser?.port;
+      const isGlobal = currentPort === "GLOBAL";
+
       // Load PortCalls for assignment
-      const pcSnap = await getDocs(collection(db, "portcalls"));
+      let qPc: any = collection(db, "portcalls");
+      if (!isGlobal) {
+          qPc = query(collection(db, "portcalls"), where("port", "==", currentPort));
+      }
+      const pcSnap = await getDocs(qPc);
       const pcalls: PortCall[] = [];
       pcSnap.forEach((doc) => {
         pcalls.push({ id: doc.id, ...doc.data() } as PortCall);
@@ -52,7 +61,11 @@ export function AdminCuadrillas() {
       setPortCalls(pcalls);
 
       // Load Crews
-      const snap = await getDocs(collection(db, "crews"));
+      let qCrews: any = collection(db, "crews");
+      if (!isGlobal) {
+          qCrews = query(collection(db, "crews"), where("port", "==", currentPort));
+      }
+      const snap = await getDocs(qCrews);
       const list: Crew[] = [];
       snap.forEach((doc) => {
         list.push({ id: doc.id, ...doc.data() } as Crew);
@@ -108,6 +121,7 @@ export function AdminCuadrillas() {
         status,
         vesselId: selectedVesselId || null,
         vesselName: selectedVesselId ? vName : null,
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
       };
 
       if (editingId) {
@@ -314,6 +328,13 @@ export function AdminCuadrillas() {
                     title="Editar Cuadrilla"
                   >
                     <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => generatePayrollPDF(cr)}
+                    className="p-2 border border-blue-200 text-blue-500 hover:text-white hover:bg-blue-500 rounded transition-all shadow-sm bg-white"
+                    title="Simular Cierre Turno / Recibo Nómina"
+                  >
+                    <FileText size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(cr.id, cr.name)}

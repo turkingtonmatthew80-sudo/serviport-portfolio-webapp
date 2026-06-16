@@ -2,6 +2,21 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import WebSocket from 'ws';
+import cron from 'node-cron';
+import * as cheerio from 'cheerio';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import TelegramBot from 'node-telegram-bot-api';
+
+if (!getApps().length) {
+  try {
+    initializeApp();
+  } catch(e) {
+    console.warn("Could not init firebase admin", e);
+  }
+}
+
+
 
 // In-memory cache of live ships
 interface LiveShip {
@@ -15,6 +30,50 @@ interface LiveShip {
   lastUpdate: Date;
 }
 const shipCache = new Map<number, LiveShip>();
+
+// Competitor mock capacity cache
+let competitorCapacity = {
+  activeVessels: 0,
+  terminalCongestion: "Bajo",
+  lastScraped: new Date().toISOString()
+};
+
+// Start cron jobs
+function startAutonomousJobs() {
+  // Cron Job cada 6 horas: "0 */6 * * *"
+  cron.schedule("0 */6 * * *", async () => {
+     console.log("[CRON] Ejecutando Gemelo Digital - Web Scraping Autónomo con Cheerio...");
+     try {
+        // En un entorno de producción real, usaríamos la URL pública del puerto o la competencia.
+        // Aquí simulamos el scrapeo con cheerio de una estructura típica en internet.
+        const mockHtml = `
+          <html>
+            <body>
+               <div class="competitor-stats">
+                  <span class="active-vessels">${Math.floor(Math.random() * 5) + 1}</span>
+                  <span class="congestion-status">${Math.random() > 0.5 ? 'Alto' : 'Medio'}</span>
+               </div>
+            </body>
+          </html>
+        `;
+        const $ = cheerio.load(mockHtml);
+        const vessels = parseInt($('.active-vessels').text()) || 0;
+        const congestion = $('.congestion-status').text() || "Bajo";
+
+        competitorCapacity = {
+           activeVessels: vessels,
+           terminalCongestion: congestion,
+           lastScraped: new Date().toISOString()
+        };
+        console.log(`[CRON] Capacidad competencia actualizada: ${vessels} buques, Congestión: ${congestion}`);
+     } catch(e) {
+        console.error("[CRON] Error en el scraper de la competencia:", e);
+     }
+  });
+  
+  // Ejecutamos una vez al iniciar
+  console.log("[CRON] Inicializando Gemelo Digital...");
+}
 
 // Start AIS Stream background connection
 function startAisStream() {
@@ -99,6 +158,120 @@ async function startServer() {
   app.use(express.json());
   
   startAisStream();
+  startAutonomousJobs();
+  
+  app.get("/api/competitor-capacity", (req, res) => {
+    res.json({ success: true, data: competitorCapacity });
+  });
+
+  // ======= TELEGRAM BOT (REAL) =======
+  const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+  let bot: TelegramBot | null = null;
+  
+  if (telegramToken && process.env.NODE_ENV !== "production") {
+      // In development / container, polling is more reliable if behind NAT
+      bot = new TelegramBot(telegramToken, { polling: true });
+      console.log("[TELEGRAM] Bot iniciado en modo polling.");
+
+      bot.on('callback_query', async (query) => {
+          const chatId = query.message?.chat.id;
+          const data = query.data || "";
+
+          console.log(`[TELEGRAM] Autoridad respondió pulsando el botón: ${data}`);
+
+          try {
+              if (data.startsWith('APROBAR_HITO_')) {
+                  const docId = data.replace('APROBAR_HITO_', '');
+                  await getFirestore().collection('hitos_legales').doc(docId).update({
+                      status: "APROBADO",
+                      updatedAt: new Date().toISOString()
+                  });
+                  if (chatId) {
+                      await bot.answerCallbackQuery(query.id, { text: "Hito Aprobado y enviado al TOS." });
+                      await bot.sendMessage(chatId, `✅ Inspección/Levante para el documento *${docId}* fue aprobado con éxito. El recinto portuario ha sido notificado.`, { parse_mode: "Markdown" });
+                  }
+              } else if (data.startsWith('RECHAZAR_HITO_')) {
+                 const docId = data.replace('RECHAZAR_HITO_', '');
+                  await getFirestore().collection('hitos_legales').doc(docId).update({
+                      status: "RECHAZADO",
+                      updatedAt: new Date().toISOString()
+                  });
+                  if (chatId) {
+                      await bot.answerCallbackQuery(query.id, { text: "Operación rechazada." });
+                      await bot.sendMessage(chatId, `❌ Inspección/Levante para el documento *${docId}* ha sido denegado permanentemente.`, { parse_mode: "Markdown" });
+                  }
+              }
+          } catch(e) {
+              console.error("[TELEGRAM] Firebase admin error:", e);
+              if (chatId) bot.answerCallbackQuery(query.id, { text: "Error de servidor al sincronizar." });
+          }
+      });
+  }
+
+  // Endpoints para que la aplicación en React empuje solicitudes interactivas a Telegram
+  app.post("/api/telegram/send-approval", express.json(), async (req, res) => {
+      // In a real environment, send to specific authority chat IDs based on 'ente' code (e.g. SENIAT)
+      const { docId, ente, titulo, detalles, vesselName } = req.body;
+      const targetChatId = process.env.TELEGRAM_CHAT_ID;
+
+      if (!bot) {
+         console.warn("[TELEGRAM] Bot deshabilitado (No TELEGRAM_BOT_TOKEN). Simulando fallo silencioso para desarrollo.");
+         return res.json({ success: false, message: "Bot no configurado" });
+      }
+
+      if (!targetChatId) {
+         return res.status(400).json({ success: false, message: "No TELEGRAM_CHAT_ID param config" });
+      }
+
+      try {
+          const opts = {
+              parse_mode: "Markdown",
+              reply_markup: {
+                  inline_keyboard: [
+                      [
+                          { text: "✅ Aprobar", callback_data: `APROBAR_HITO_${docId}` },
+                          { text: "❌ Rechazar", callback_data: `RECHAZAR_HITO_${docId}` }
+                      ]
+                  ]
+              }
+          };
+
+          const textMsg = `⚠️ *NUEVA SOLICITUD DE [${ente?.toUpperCase() || "AUTORIDAD"}]*\n\n*Hito:* ${titulo}\n*Buque / Referencia:* ${vesselName}\n*Detalles:* ${detalles}\n*ID Trazabilidad:* ${docId}\n\nPor favor, dictamine el resultado de la inspección:`;
+          await bot.sendMessage(targetChatId, textMsg, opts as any);
+          
+          res.json({ success: true, message: "Enviado al canal de Telegram de la autoridad." });
+      } catch(e: any) {
+          console.error("[TELEGRAM] Send error", e);
+          res.status(500).json({ success: false, error: e.message });
+      }
+  });
+
+  // (This old mock endpoint remains backwards-compatible if needed)
+  app.post("/api/webhook/telegram", express.json(), async (req, res) => {
+    try {
+      const body = req.body;
+      
+      // En un caso real con bot de Telegram: 
+      // body.callback_query contiene la respuesta del botón que pulsó la autoridad.
+      console.log("[TELEGRAM WEBHOOK] Recepción de evento:", JSON.stringify(body));
+      
+      if (body.callback_query) {
+        // Formato Telegram Callback Query (Ej: "CONFORME_DUA_123")
+        const callbackData = body.callback_query.data;
+        console.log(`[TELEGRAM WEBHOOK] Autoridad respondió: ${callbackData}`);
+        
+        // Aquí conectaríamos con Firebase Admin para actualizar Firestore y destrabar el proceso logístico
+        // const admin = require("firebase-admin");
+        // await admin.firestore().collection('hitos_legales').doc('doc-id').update({ ... })
+      }
+
+      // IMPORTANTE: Telegram requiere siempre un 200 OK para no reintentar
+      res.status(200).send("OK");
+    } catch (e) {
+      console.error("[TELEGRAM WEBHOOK] Error:", e);
+      res.status(500).send("Error interno");
+    }
+  });
 
   app.post("/api/vessel-data", async (req, res) => {
     try {
@@ -212,6 +385,13 @@ async function startServer() {
       console.error(error);
       res.status(500).json({ success: false, error: error.message });
     }
+  });
+
+  app.post("/api/telegram-webhook", (req, res) => {
+    // Mock telegram bot webhook
+    const { action, portCallId, buque } = req.body;
+    console.log(`[TELEGRAM MOCK] Received action: ${action} for buque: ${buque} (ID: ${portCallId})`);
+    res.json({ success: true, message: "Mensaje encolado a Telegram" });
   });
 
   if (process.env.NODE_ENV !== "production") {

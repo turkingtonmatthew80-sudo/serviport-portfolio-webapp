@@ -1,7 +1,7 @@
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
-export async function logAuditAction(action: string, userRole: string = "SUPERADMIN", userEmail: string = "") {
+export async function logAuditAction(action: string, userRole: string = "GERENTE_GENERAL", userEmail: string = "") {
   try {
     await addDoc(collection(db, "audit_logs"), {
       action,

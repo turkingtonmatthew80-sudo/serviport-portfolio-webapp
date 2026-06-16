@@ -39,14 +39,26 @@ import { AdminAprobaciones } from "./pages/AdminAprobaciones";
 import { AdminYard } from "./pages/AdminYard";
 import { AdminGate } from "./pages/AdminGate";
 import { AdminBuques } from "./pages/AdminBuques";
+import { AdminTrafico } from "./pages/AdminTrafico";
+import { AdminDA } from "./pages/AdminDA";
+import { AdminDocumentos } from "./pages/AdminDocumentos";
+import { AdminHSE } from "./pages/AdminHSE";
 import { AdminEstibador } from "./pages/AdminEstibador";
 import { AdminCuadrillas } from "./pages/AdminCuadrillas";
 import { AdminMonitoreoTOS } from "./pages/AdminMonitoreoTOS";
 import { AdminRendimiento } from "./pages/AdminRendimiento";
+import { AdminNomina } from "./pages/AdminNomina";
+import { AdminScraperPanel } from "./pages/AdminScraperPanel";
+import { AdminCatalogoBuques } from "./pages/AdminCatalogoBuques";
 import { B2BRegisterPage } from "./pages/B2BRegisterPage";
 import { PortalIndexRoute } from "./pages/portal/PortalIndexRoute";
 import { NavieraDashboard } from "./pages/portal/roles/NavieraDashboard";
 import { ImportadorDashboard } from "./pages/portal/roles/ImportadorDashboard";
+import { ExportadorDashboard } from "./pages/portal/roles/ExportadorDashboard";
+import { AgenteAduanaDashboard } from "./pages/portal/roles/AgenteAduanaDashboard";
+import { TransportistaDashboard } from "./pages/portal/roles/TransportistaDashboard";
+import { ConsolidadorDashboard } from "./pages/portal/roles/ConsolidadorDashboard";
+import { ArmadorDashboard } from "./pages/portal/roles/ArmadorDashboard";
 import { RoleGuard } from "./components/RoleGuard";
 
 import { SuscripcionPage } from "./pages/portal/SuscripcionPage";
@@ -128,17 +140,17 @@ export default function App() {
                 </AdminRoleGuard>
              } />
              <Route path="empleados" element={
-                <AdminRoleGuard allowedRoles={["SUPERADMIN", "GERENTE_OPERACIONES"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL", "GERENTE_OPERACIONES"]}>
                   <AdminEmployees />
                 </AdminRoleGuard>
              } />
              <Route path="configuracion" element={
-                <AdminRoleGuard allowedRoles={["SUPERADMIN"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL"]}>
                   <AdminConfig />
                 </AdminRoleGuard>
              } />
              <Route path="aprobaciones" element={
-                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "AGENTE_DOCUMENTACION"]}>
                   <AdminAprobaciones />
                 </AdminRoleGuard>
              } />
@@ -148,12 +160,12 @@ export default function App() {
                 </AdminRoleGuard>
              } />
              <Route path="gate" element={
-                <AdminRoleGuard allowedRoles={["INSPECTOR_PUERTA", "GERENTE_OPERACIONES", "PLANIFICADOR_PATIO"]}>
+                <AdminRoleGuard allowedRoles={["INSPECTOR_PUERTA", "GERENTE_OPERACIONES", "PLANIFICADOR_PATIO", "COORDINADOR_TRAFICO"]}>
                   <AdminGate />
                 </AdminRoleGuard>
              } />
              <Route path="buques" element={
-                <AdminRoleGuard allowedRoles={["OFICINISTA_BUQUES", "GERENTE_OPERACIONES"]}>
+                <AdminRoleGuard allowedRoles={["OFICIAL_BUQUES", "DESPACHADOR_BUQUES", "GERENTE_OPERACIONES"]}>
                   <AdminBuques />
                 </AdminRoleGuard>
              } />
@@ -163,18 +175,53 @@ export default function App() {
                 </AdminRoleGuard>
              } />
              <Route path="cuadrillas" element={
-                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "SUPERADMIN"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
                   <AdminCuadrillas />
                 </AdminRoleGuard>
              } />
              <Route path="monitoreo-tos" element={
-                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "SUPERADMIN", "PLANIFICADOR_PATIO"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "GERENTE_GENERAL", "PLANIFICADOR_PATIO", "OFICIAL_BUQUES"]}>
                   <AdminMonitoreoTOS />
                 </AdminRoleGuard>
              } />
              <Route path="rendimiento" element={
-                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "SUPERADMIN"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "GERENTE_GENERAL", "ANALISTA_BI"]}>
                   <AdminRendimiento />
+                </AdminRoleGuard>
+             } />
+             <Route path="nomina" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL", "CONTADOR"]}>
+                  <AdminNomina />
+                </AdminRoleGuard>
+             } />
+             <Route path="trafico" element={
+                <AdminRoleGuard allowedRoles={["COORDINADOR_TRAFICO", "GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
+                  <AdminTrafico />
+                </AdminRoleGuard>
+             } />
+             <Route path="da" element={
+                <AdminRoleGuard allowedRoles={["FACTURADOR", "GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
+                  <AdminDA />
+                </AdminRoleGuard>
+             } />
+             <Route path="documentos" element={
+                <AdminRoleGuard allowedRoles={["AGENTE_DOCUMENTACION", "GERENTE_OPERACIONES", "GERENTE_GENERAL", "OFICIAL_BUQUES"]}>
+                  <AdminDocumentos />
+                </AdminRoleGuard>
+             } />
+             <Route path="hse" element={
+                <AdminRoleGuard allowedRoles={["SUPERVISOR_HSE", "GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
+                  <AdminHSE />
+                </AdminRoleGuard>
+             } />
+             <Route path="scraper-panel" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL"]}>
+                  <AdminScraperPanel />
+                </AdminRoleGuard>
+             } />
+             <Route path="catalogo-buques" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL", "OFICIAL_BUQUES", "AGENTE_DOCUMENTACION"]}>
+                  <AdminCatalogoBuques />
                 </AdminRoleGuard>
              } />
           </Route>
@@ -243,6 +290,56 @@ export default function App() {
                     <h2 className="text-xl font-bold">Retiros</h2>Módulo
                     Importador en desarrollo
                   </div>
+                </RoleGuard>
+              }
+            />
+
+            {/* Exportador */}
+            <Route
+              path="exportador/dashboard"
+              element={
+                <RoleGuard allowedRoles={["exportador"]}>
+                  <ExportadorDashboard />
+                </RoleGuard>
+              }
+            />
+
+            {/* Agente de Aduana */}
+            <Route
+              path="aduana/dashboard"
+              element={
+                <RoleGuard allowedRoles={["agente_aduana"]}>
+                  <AgenteAduanaDashboard />
+                </RoleGuard>
+              }
+            />
+
+            {/* Transportista */}
+            <Route
+              path="transportista/dashboard"
+              element={
+                <RoleGuard allowedRoles={["transportista"]}>
+                  <TransportistaDashboard />
+                </RoleGuard>
+              }
+            />
+
+            {/* Consolidador */}
+            <Route
+              path="consolidador/dashboard"
+              element={
+                <RoleGuard allowedRoles={["consolidador"]}>
+                  <ConsolidadorDashboard />
+                </RoleGuard>
+              }
+            />
+
+            {/* Armador */}
+            <Route
+              path="armador/dashboard"
+              element={
+                <RoleGuard allowedRoles={["armador"]}>
+                  <ArmadorDashboard />
                 </RoleGuard>
               }
             />

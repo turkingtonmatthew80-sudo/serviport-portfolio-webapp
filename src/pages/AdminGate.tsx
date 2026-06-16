@@ -142,7 +142,14 @@ export function AdminGate() {
     setIsSyncing(true);
     try {
       // 1. Fetch live historical gate events from firestore
-      const eventsSnap = await getDocs(query(collection(db, "gate_events"), orderBy("timestamp", "desc"), limit(25)));
+      let qEvents: any = collection(db, "gate_events");
+      if (adminUser && adminUser.port !== "GLOBAL") {
+         qEvents = query(collection(db, "gate_events"), where("port", "==", adminUser.port), orderBy("timestamp", "desc"), limit(25));
+      } else {
+         qEvents = query(collection(db, "gate_events"), orderBy("timestamp", "desc"), limit(25));
+      }
+      
+      const eventsSnap = await getDocs(qEvents);
       const events: GateEvent[] = [];
       eventsSnap.forEach(doc => {
         events.push({ id: doc.id, ...doc.data() } as GateEvent);
@@ -150,7 +157,11 @@ export function AdminGate() {
       setHistory(events);
 
       // 2. Fetch active containers in database to allow searching the list for withdrawals
-      const consSnap = await getDocs(collection(db, "contenedores"));
+      let qContainers: any = collection(db, "contenedores");
+      if (adminUser && adminUser.port !== "GLOBAL") {
+         qContainers = query(collection(db, "contenedores"), where("port", "==", adminUser.port));
+      }
+      const consSnap = await getDocs(qContainers);
       const cons: DBContainer[] = [];
       consSnap.forEach(doc => {
         cons.push({ id: doc.id, ...doc.data() } as DBContainer);
@@ -266,8 +277,9 @@ export function AdminGate() {
         condition: containerCondition,
         eirNumber: eirId,
         inspector: adminUser?.email || "puerta.guard@serviport.com.ve",
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         timestamp: serverTimestamp()
-      };
+      } as any;
 
       const docRef = await addDoc(collection(db, "gate_events"), gateEventData);
 
@@ -289,7 +301,8 @@ export function AdminGate() {
             cargoDesc: "CARGA EXPEDIDA EN PUERTO EXPORTACIÓN",
             operationType: "Carga",
             portcallId: "", // unassigned to ship yet
-            userId: "CLIENT_B2B_MOCK" // links to B2B portal representation
+            userId: "CLIENT_B2B_MOCK", // links to B2B portal representation
+            port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
           });
         }
       }
@@ -307,7 +320,8 @@ export function AdminGate() {
           cargoDesc: "CONTENEDOR VACÍO REAPROVISIONAMIENTO",
           operationType: "Carga",
           portcallId: "",
-          userId: "CLIENT_B2B_MOCK"
+          userId: "CLIENT_B2B_MOCK",
+          port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
         });
       }
 
@@ -381,8 +395,9 @@ export function AdminGate() {
         condition: "SUSTRECCIÓN AUTORIZADA - DOCUMENTADO",
         eirNumber: eirId,
         inspector: adminUser?.email || "puerta.guard@serviport.com.ve",
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         timestamp: serverTimestamp()
-      };
+      } as any;
 
       const docRef = await addDoc(collection(db, "gate_events"), gateEventData);
 
@@ -430,7 +445,7 @@ export function AdminGate() {
     setCompany("SERVICIOS LOGÍSTICOS CARIBE S.A.");
   };
 
-  // Searching database containers for withdrawal matches (available options)
+   // Searching database containers for withdrawal matches (available options)
   const pickupEligibleContainers = dbContainers.filter(c => {
     // Only items that are in warehouse and available ("Disponible") can be withdrawn
     const isAvailable = c.status === "Disponible";
@@ -440,6 +455,14 @@ export function AdminGate() {
       return isAvailable && c.containerId.toLowerCase().includes(searchContainerQuery.toLowerCase());
     }
     return isAvailable;
+  }).map(c => {
+    // Generate a pseudo-random arrival date for Free Time calculations local simulation
+    // Using containerId characters to remain deterministic
+    const charSum = c.containerId.split('').reduce((acc, val) => acc + val.charCodeAt(0), 0);
+    const daysInPort = (charSum % 25) + 1; // 1 to 25 days
+    const freeTimeAllowed = 14; // Typical Free Time is 14 days
+    const overstayDays = Math.max(0, daysInPort - freeTimeAllowed);
+    return { ...c, daysInPort, overstayDays, freeTimeAllowed };
   });
 
   return (
@@ -1012,6 +1035,7 @@ export function AdminGate() {
                                    <th className="py-2.5 px-5 font-bold">Medida ISO</th>
                                    <th className="py-2.5 px-5 font-bold">Ubicación AGD</th>
                                    <th className="py-2.5 px-5 font-bold">Línea Naviera</th>
+                                   <th className="py-2.5 px-5 font-bold">Free Time (Local)</th>
                                    <th className="py-2.5 px-5 font-bold">Status</th>
                                    <th className="py-2.5 px-5 font-bold text-right">Confirmar Despacho</th>
                                 </tr>
@@ -1020,10 +1044,23 @@ export function AdminGate() {
                                 {pickupEligibleContainers.length > 0 ? (
                                    pickupEligibleContainers.map(c => (
                                       <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                                         <td className="py-3 px-5 font-bold text-secondary text-sm">{c.containerId}</td>
+                                         <td className="py-3 px-5 font-bold text-secondary text-sm">
+                                            {c.containerId}
+                                            {c.overstayDays > 0 && <span className="block text-[9px] text-red-500 uppercase tracking-widest mt-0.5">Demora Activa</span>}
+                                         </td>
                                          <td className="py-3 px-5 text-foreground-muted">{c.type}</td>
                                          <td className="py-3 px-5 font-bold text-teal-650 flex items-center gap-1.5"><MapPin size={12} className="text-teal-400" /> {c.location || "AGD BLOCK ALPHA"}</td>
                                          <td className="py-3 px-5 text-slate-500 font-bold">{c.lineOperator || "OPERADOR POOL"}</td>
+                                         <td className="py-3 px-5">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-foreground-muted">{c.daysInPort} / {c.freeTimeAllowed} días</span>
+                                                {c.overstayDays > 0 ? (
+                                                   <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1 py-0.5 border border-red-200 rounded w-fit uppercase">Excedido: +{c.overstayDays}d</span>
+                                                ) : (
+                                                   <span className="text-[10px] font-bold text-emerald-600 uppercase">En Tiempo</span>
+                                                )}
+                                            </div>
+                                         </td>
                                          <td className="py-3 px-5">
                                             <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-250 font-bold text-[9px] uppercase rounded">
                                                {c.status}
@@ -1042,7 +1079,7 @@ export function AdminGate() {
                                    ))
                                 ) : (
                                    <tr>
-                                      <td colSpan={6} className="py-12 text-center text-foreground-muted uppercase tracking-widest bg-slate-50/20">
+                                      <td colSpan={7} className="py-12 text-center text-foreground-muted uppercase tracking-widest bg-slate-50/20">
                                          <AlertTriangle className="mx-auto text-yellow-500 mb-1.5 animate-pulse" size={24} />
                                          <p className="font-bold text-secondary text-xs">Sin contenedores listos para gate-out</p>
                                          <p className="text-[10px] lowercase font-sans mt-0.5 font-normal">No hay correspondencias en el AGD etiquetadas como &quot;Disponible&quot;.</p>

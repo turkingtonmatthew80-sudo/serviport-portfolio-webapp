@@ -19,6 +19,7 @@ export function PortalIndexRoute() {
           exportador: "exportador",
           agente_aduana: "aduana",
           transportista: "transportista",
+          consolidador: "consolidador",
         };
         const basePath = pathMap[role] || role;
         navigate(`/portal/${basePath}/dashboard`, { replace: true });

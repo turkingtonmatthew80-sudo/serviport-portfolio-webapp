@@ -212,6 +212,11 @@ const SERVICES = [
     name: "Transportista",
     desc: "Órdenes de carga y EIRs",
   },
+  {
+    id: "consolidador",
+    name: "Consolidador / NVOCC",
+    desc: "Gestión de B/L máster y house",
+  },
 ];
 
 export function B2BRegisterPage() {

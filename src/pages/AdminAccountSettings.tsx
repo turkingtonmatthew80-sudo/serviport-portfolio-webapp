@@ -19,7 +19,7 @@ export function AdminAccountSettings() {
 
   useEffect(() => {
     async function loadData() {
-      if (!adminUser || adminUser.role === "SUPERADMIN") {
+      if (!adminUser || adminUser.role === "GERENTE_GENERAL") {
         setIsLoading(false);
         return;
       }
@@ -43,7 +43,7 @@ export function AdminAccountSettings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adminUser || adminUser.role === "SUPERADMIN") return;
+    if (!adminUser || adminUser.role === "GERENTE_GENERAL") return;
     
     setErrorMsg("");
     setSuccessMsg("");
@@ -71,12 +71,12 @@ export function AdminAccountSettings() {
     );
   }
 
-  if (adminUser?.role === "SUPERADMIN") {
+  if (adminUser?.role === "GERENTE_GENERAL") {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <h2 className="text-3xl font-black text-secondary uppercase tracking-tight font-sansita">Configuración de Cuenta</h2>
         <div className="bg-white p-8 border border-border text-center rounded shadow-sm">
-          <p className="text-foreground-muted font-mono">La cuenta de Administrador de Sistema se configura mediante variables de entorno.</p>
+          <p className="text-foreground-muted font-mono">La cuenta del Gerente General se configura mediante variables estáticas por seguridad.</p>
         </div>
       </div>
     );

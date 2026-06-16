@@ -3,19 +3,33 @@ import { db } from "../lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export type Role =
-  | "SUPERADMIN"
+  | "GERENTE_GENERAL" // Superadmin
   | "GERENTE_OPERACIONES"
-  | "OFICINISTA_BUQUES"
-  | "PLANIFICADOR_PATIO"
+  | "DESPACHADOR_BUQUES"
+  | "OFICIAL_BUQUES"
+  | "AGENTE_DOCUMENTACION"
   | "INSPECTOR_PUERTA"
+  | "PLANIFICADOR_PATIO"
+  | "COORDINADOR_TRAFICO"
+  | "ESTIBADOR"
+  | "SUPERVISOR_HSE"
   | "CONTADOR"
-  | "ESTIBADOR";
+  | "FACTURADOR"
+  | "ANALISTA_BI";
+
+export type PortLocation = 
+  | "GLOBAL" // Solo Gerente General
+  | "Puerto Cabello"
+  | "La Guaira"
+  | "Maracaibo"
+  | "Guanta";
 
 export interface AdminUser {
   id: string; // Internal username
   name: string;
   email: string;
   role: Role;
+  port: PortLocation;
 }
 
 interface AdminAuthContextType {
@@ -48,9 +62,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     if (username === "admin" && pass === "1234") {
       const u: AdminUser = {
         id: "superadmin_id",
-        name: "Admin Sistema",
+        name: "Gerente General",
         email: "admin@serviport.local",
-        role: "SUPERADMIN",
+        role: "GERENTE_GENERAL",
+        port: "GLOBAL"
       };
       setAdminUser(u);
       localStorage.setItem("serviport_admin_session", JSON.stringify(u));
@@ -90,6 +105,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       name: employeeData.name,
       email: employeeData.email || "",
       role: employeeData.role as Role,
+      port: employeeData.port as PortLocation || "Puerto Cabello", // Fallback for old records
     };
 
     setAdminUser(u);

@@ -115,43 +115,65 @@ export function AdminYard() {
   }, [isSimRunning, simSpeedMultiplier]);
 
   // Fetch full operational data
-  const loadWorkspaceData = async () => {
+  useEffect(() => {
     setIsSyncing(true);
+    let unsubscribePatios: any;
+    let unsubscribeContainers: any;
+    let unsubscribeMovements: any;
+    
     try {
-      // 1. Fetch patios
-      const patiosSnap = await getDocs(collection(db, "patios"));
-      const loadedPatios: Patio[] = [];
-      patiosSnap.forEach(doc => {
-        loadedPatios.push({ id: doc.id, ...doc.data() } as Patio);
-      });
-      setPatios(loadedPatios);
+      import("firebase/firestore").then(({ collection, onSnapshot }) => {
+        // 1. Fetch patios real-time
+        let qPatios: any = collection(db, "patios");
+        if (adminUser && adminUser.port !== "GLOBAL") {
+           qPatios = query(collection(db, "patios"), where("port", "==", adminUser.port));
+        }
+        unsubscribePatios = onSnapshot(qPatios, (snap: any) => {
+          const loadedPatios: Patio[] = [];
+          snap.forEach((doc: any) => {
+            loadedPatios.push({ id: doc.id, ...doc.data() } as Patio);
+          });
+          setPatios(loadedPatios);
+        });
 
-      // 2. Fetch containers
-      const conSnap = await getDocs(collection(db, "contenedores"));
-      const loadedCons: DBContainer[] = [];
-      conSnap.forEach(doc => {
-        loadedCons.push({ id: doc.id, ...doc.data() } as DBContainer);
-      });
-      setDbContainers(loadedCons);
+        // 2. Fetch containers real-time
+        let qContainers: any = collection(db, "contenedores");
+        if (adminUser && adminUser.port !== "GLOBAL") {
+           qContainers = query(collection(db, "contenedores"), where("port", "==", adminUser.port));
+        }
+        unsubscribeContainers = onSnapshot(qContainers, (snap: any) => {
+          const loadedCons: DBContainer[] = [];
+          snap.forEach((doc: any) => {
+            loadedCons.push({ id: doc.id, ...doc.data() } as DBContainer);
+          });
+          setDbContainers(loadedCons);
+        });
 
-      // 3. Fetch active movements (excluding COMPLETED to avoid visual clutter)
-      const movSnap = await getDocs(collection(db, "yard_movements"));
-      const loadedMovs: YardMovement[] = [];
-      movSnap.forEach(doc => {
-        loadedMovs.push({ id: doc.id, ...doc.data() } as YardMovement);
+        // 3. Fetch active movements real-time
+        let qMovements: any = collection(db, "yard_movements");
+        if (adminUser && adminUser.port !== "GLOBAL") {
+           qMovements = query(collection(db, "yard_movements"), where("port", "==", adminUser.port));
+        }
+        unsubscribeMovements = onSnapshot(qMovements, (snap: any) => {
+          const loadedMovs: YardMovement[] = [];
+          snap.forEach((doc: any) => {
+            loadedMovs.push({ id: doc.id, ...doc.data() } as YardMovement);
+          });
+          setMovements(loadedMovs);
+        });
       });
-      setMovements(loadedMovs);
-
     } catch (err) {
       console.error("Error loading yard planner system files:", err);
     } finally {
       setIsSyncing(false);
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadWorkspaceData();
+    
+    return () => {
+      if (unsubscribePatios) unsubscribePatios();
+      if (unsubscribeContainers) unsubscribeContainers();
+      if (unsubscribeMovements) unsubscribeMovements();
+    }
   }, []);
 
   const getPatioObj = (id: string) => {
@@ -246,6 +268,7 @@ export function AdminYard() {
         status: "PENDIENTE",
         type: "TRASLADO INTERNO",
         machineryId: manualMachinery,
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         timestamp: serverTimestamp()
       });
 
@@ -263,7 +286,6 @@ export function AdminYard() {
       setManualContainerId("");
       setActionSuccess(`Orden de traslado creada con éxito para ${cleanCode}`);
       setTimeout(() => setActionSuccess(null), 5000);
-      loadWorkspaceData();
     } catch (e) {
       console.error("Error creating movement order:", e);
     } finally {
@@ -309,6 +331,7 @@ export function AdminYard() {
         status: "COMPLETED",
         type: "TRASLADO INSTANTÁNEO",
         machineryId: manualMachinery,
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         timestamp: serverTimestamp()
       });
 
@@ -326,7 +349,6 @@ export function AdminYard() {
       setManualContainerId("");
       setActionSuccess(`Contenedor ${cleanCode} ubicado inmediatamente en ${destinationStr}`);
       setTimeout(() => setActionSuccess(null), 5000);
-      loadWorkspaceData();
     } catch (e) {
       console.error("Error updates instant container position:", e);
     } finally {
@@ -361,7 +383,6 @@ export function AdminYard() {
 
       setActionSuccess(`Maniobra completada para contenedor ${reference}.`);
       setTimeout(() => setActionSuccess(null), 5000);
-      loadWorkspaceData();
     } catch (err) {
       console.error("Error completing simulated movement:", err);
     } finally {
@@ -376,7 +397,6 @@ export function AdminYard() {
     try {
       await deleteDoc(doc(db, "yard_movements", movId));
       await logAuditAction(`Canceló orden de maniobra para contenedor ${reference}`, "YARD_PLANNER", adminUser?.email);
-      loadWorkspaceData();
     } catch (e) {
       console.error("Error deleting order:", e);
     } finally {
@@ -390,8 +410,8 @@ export function AdminYard() {
     try {
       // Simulate adding unassigned containers quickly representing new discharged flow in DB
       const mockCons = [
-        { containerId: "MSC" + Math.floor(100000 + Math.random() * 899999) + "U", type: "40' Dry Van", weight: 24.2, status: "Disponible", location: "POR ASIGNAR", sealNumber: "SL-MOCK-" + Math.floor(1000 + Math.random() * 9000), lineOperator: "MSC", cargoDesc: "Simulación de Acceso" },
-        { containerId: "HAM" + Math.floor(100000 + Math.random() * 899999) + "U", type: "40' High Cube", weight: 26.5, status: "Disponible", location: "POR ASIGNAR", sealNumber: "SL-MOCK-" + Math.floor(1000 + Math.random() * 9000), lineOperator: "HAMBURG SÜD", cargoDesc: "Materiales Médicos" }
+        { containerId: "MSC" + Math.floor(100000 + Math.random() * 899999) + "U", type: "40' Dry Van", weight: 24.2, status: "Disponible", location: "POR ASIGNAR", sealNumber: "SL-MOCK-" + Math.floor(1000 + Math.random() * 9000), lineOperator: "MSC", cargoDesc: "Simulación de Acceso", port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello") },
+        { containerId: "HAM" + Math.floor(100000 + Math.random() * 899999) + "U", type: "40' High Cube", weight: 26.5, status: "Disponible", location: "POR ASIGNAR", sealNumber: "SL-MOCK-" + Math.floor(1000 + Math.random() * 9000), lineOperator: "HAMBURG SÜD", cargoDesc: "Materiales Médicos", port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello") }
       ];
 
       for (const mc of mockCons) {
@@ -406,7 +426,6 @@ export function AdminYard() {
 
       setActionSuccess("¡Picos de cola disparados! 2 nuevos contenedores ingresaron a puerto.");
       setTimeout(() => setActionSuccess(null), 5000);
-      loadWorkspaceData();
     } catch (e) {
       console.error(e);
     } finally {

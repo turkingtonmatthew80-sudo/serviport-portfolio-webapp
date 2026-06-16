@@ -18,13 +18,13 @@ export function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-black text-secondary uppercase tracking-tight font-sansita">
-            Dashboard {adminUser.role === "SUPERADMIN" ? "Global" : "Operativo"}
+            Dashboard {adminUser.role === "GERENTE_GENERAL" ? "Global" : "Operativo"}
           </h2>
           <p className="text-foreground-muted text-sm font-sans mt-1">
             Resumen en tiempo real del estado del sistema
           </p>
         </div>
-        {adminUser.role === "SUPERADMIN" && (
+        {adminUser.role === "GERENTE_GENERAL" && (
           <div className="flex items-center gap-3 bg-white border border-border p-2 rounded shadow-sm">
             <span className="text-xs font-bold text-foreground-muted uppercase tracking-widest pl-2">SIMULACIÓN:</span>
             <button className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded text-xs font-bold">
@@ -37,10 +37,10 @@ export function AdminDashboard() {
         )}
       </div>
 
-      {adminUser.role === "SUPERADMIN" && <SuperAdminDashboard />}
+      {adminUser.role === "GERENTE_GENERAL" && <SuperAdminDashboard />}
       {adminUser.role === "GERENTE_OPERACIONES" && <GerenteDashboard />}
       {adminUser.role === "CONTADOR" && <AdminContador />}
-      {["PLANIFICADOR_PATIO", "OFICINISTA_BUQUES", "INSPECTOR_PUERTA", "ESTIBADOR"].includes(adminUser.role) && (
+      {["PLANIFICADOR_PATIO", "DESPACHADOR_BUQUES", "OFICIAL_BUQUES", "INSPECTOR_PUERTA", "ESTIBADOR", "COORDINADOR_TRAFICO", "AGENTE_DOCUMENTACION"].includes(adminUser.role) && (
         <div className="bg-white p-8 border border-border rounded shadow-sm text-center mt-12">
           <p className="text-primary font-bold tracking-widest uppercase font-mono mb-2 text-xl">SISTEMA TOS ACTIVO</p>
           <p className="text-foreground-muted">Utiliza el menú lateral para acceder a tu herramienta operativa y proceder con los registros en la base de datos.</p>
@@ -161,6 +161,7 @@ function SuperAdminDashboard() {
 }
 
 function GerenteDashboard() {
+  const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState({ buques: 0, approvals: 0, yardCurrent: 0, yardCapacity: 0, movementsCount: 0 });
   const [portcalls, setPortcalls] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -169,8 +170,16 @@ function GerenteDashboard() {
   useEffect(() => {
      const loadStats = async () => {
          try {
+             const { query, where } = await import("firebase/firestore");
+             const currentPort = adminUser?.port;
+             const isGlobal = currentPort === "GLOBAL";
+
              // 1. Fetch real portcalls
-             const bSnap = await getDocs(collection(db, "portcalls"));
+             let qB = collection(db, "portcalls");
+             if (!isGlobal) {
+                 qB = query(collection(db, "portcalls"), where("port", "==", currentPort)) as any;
+             }
+             const bSnap = await getDocs(qB);
              const pcList: any[] = [];
              bSnap.forEach(doc => {
                  pcList.push({ id: doc.id, ...doc.data() });
@@ -178,12 +187,21 @@ function GerenteDashboard() {
              setPortcalls(pcList);
 
              // 2. Fetch pending approvals (approvals + portcalls in Programado state)
-             const aSnap = await getDocs(collection(db, "approvals"));
+             // Approvals: B2B requests
+             let qA = collection(db, "approvals");
+             if (!isGlobal) {
+                 qA = query(collection(db, "approvals"), where("port", "==", currentPort)) as any;
+             }
+             const aSnap = await getDocs(qA);
              const pendingApprovalsCount = aSnap.docs.filter(d => d.data().status === "pending").length;
              const pendingPortcallsCount = pcList.filter(pc => pc.status === "Programado").length;
 
              // 3. Fetch patios for capacity percentage
-             const patSnap = await getDocs(collection(db, "patios"));
+             let qPat = collection(db, "patios");
+             if (!isGlobal) {
+                 qPat = query(collection(db, "patios"), where("port", "==", currentPort)) as any;
+             }
+             const patSnap = await getDocs(qPat);
              let totalCurrent = 0;
              let totalCapacity = 0;
              patSnap.forEach(doc => {
@@ -193,7 +211,11 @@ function GerenteDashboard() {
               });
 
              // 4. Fetch movements
-             const movSnap = await getDocs(collection(db, "yard_movements"));
+             let qMov = collection(db, "yard_movements");
+             if (!isGlobal) {
+                 qMov = query(collection(db, "yard_movements"), where("port", "==", currentPort)) as any;
+             }
+             const movSnap = await getDocs(qMov);
 
              setStats({
                  buques: pcList.length,
@@ -227,7 +249,11 @@ function GerenteDashboard() {
              }
 
              // Fetch gate events for notifications
-             const gateSnap = await getDocs(collection(db, "gate_events"));
+             let qGate = collection(db, "gate_events");
+             if (!isGlobal) {
+                 qGate = query(collection(db, "gate_events"), where("port", "==", currentPort)) as any;
+             }
+             const gateSnap = await getDocs(qGate);
              if (!gateSnap.empty) {
                  const latestGate = gateSnap.docs[0].data();
                  generatedAlerts.push({

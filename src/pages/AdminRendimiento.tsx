@@ -3,6 +3,7 @@ import { Activity, TrendingUp, BarChart2, ShieldCheck, RefreshCcw, Loader2, Awar
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, Legend } from "recharts";
+import { useAdminAuth } from "../contexts/AdminAuthContext";
 
 // Mock data representing monthly performance metrics
 const monthlyData = [
@@ -22,15 +23,30 @@ const bffPerformance = [
 ];
 
 export function AdminRendimiento() {
+  const { adminUser } = useAdminAuth();
   const [dbStats, setDbStats] = useState({ crewsCount: 0, movementsCount: 0, portcallsCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDbStats = async () => {
     setIsLoading(true);
     try {
-      const crSnap = await getDocs(collection(db, "crews"));
-      const mvSnap = await getDocs(collection(db, "yard_movements"));
-      const pcSnap = await getDocs(collection(db, "portcalls"));
+      const { query, where } = await import("firebase/firestore");
+      const currentPort = adminUser?.port;
+      const isGlobal = currentPort === "GLOBAL";
+
+      let qCrews: any = collection(db, "crews");
+      let qMovs: any = collection(db, "yard_movements");
+      let qPc: any = collection(db, "portcalls");
+
+      if (!isGlobal) {
+          qCrews = query(collection(db, "crews"), where("port", "==", currentPort));
+          qMovs = query(collection(db, "yard_movements"), where("port", "==", currentPort));
+          qPc = query(collection(db, "portcalls"), where("port", "==", currentPort));
+      }
+
+      const crSnap = await getDocs(qCrews);
+      const mvSnap = await getDocs(qMovs);
+      const pcSnap = await getDocs(qPc);
 
       setDbStats({
         crewsCount: crSnap.size,
@@ -46,7 +62,7 @@ export function AdminRendimiento() {
 
   useEffect(() => {
     fetchDbStats();
-  }, []);
+  }, [adminUser]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

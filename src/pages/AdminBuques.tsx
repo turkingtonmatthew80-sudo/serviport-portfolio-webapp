@@ -97,69 +97,97 @@ export function AdminBuques() {
   const [newVesselETA, setNewVesselETA] = useState("");
 
   // Load General Data
-  const loadInitialData = async () => {
-    setIsLoading(true);
-    try {
-      // 1. Load active system portcalls
-      const pcSnap = await getDocs(query(collection(db, "portcalls")));
-      const loadedPortCalls: PortCall[] = [];
-      pcSnap.forEach(doc => {
-         loadedPortCalls.push({ id: doc.id, ...doc.data() } as PortCall);
-      });
-      setBuques(loadedPortCalls);
-
-      // Set default selected vessel if not already set
-      if (loadedPortCalls.length > 0 && !selectedBuqueId) {
-        setSelectedBuqueId(loadedPortCalls[0].id);
-      }
-
-      // 2. Load B2B shipping line requests
-      const b2bSnap = await getDocs(query(collection(db, "port_calls"), where("status", "==", "Programado")));
-      const loadedB2B: B2BPortCall[] = [];
-      b2bSnap.forEach(doc => {
-        loadedB2B.push({ id: doc.id, ...doc.data() } as B2BPortCall);
-      });
-      setB2bRequests(loadedB2B);
-
-      // 3. Load stevedoring crews (crews)
-      const crewSnap = await getDocs(query(collection(db, "crews")));
-      const loadedCrews: StevedoreCrew[] = [];
-      crewSnap.forEach(doc => {
-        loadedCrews.push({ id: idClean(doc.id), ...doc.data() } as StevedoreCrew);
-      });
-      setCrews(loadedCrews);
-
-    } catch (err) {
-      console.error("Error loading operational dashboard database:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Helper because document keys sometimes are handled strangely
   const idClean = (id: string) => id;
 
-  // Load selected vessel's containers (stowage manifest)
+  // Real-time synchronization for dashboard base tables
+  useEffect(() => {
+    setIsLoading(true);
+    let unsubscribePortCalls: any;
+    let unsubscribeB2b: any;
+    let unsubscribeCrews: any;
+
+    try {
+      import("firebase/firestore").then(({ collection, query, where, onSnapshot }) => {
+        // 1. Port Calls
+        let qPortCalls: any = collection(db, "portcalls");
+        if (adminUser && adminUser.port !== "GLOBAL") {
+           qPortCalls = query(collection(db, "portcalls"), where("port", "==", adminUser.port));
+        }
+
+        unsubscribePortCalls = onSnapshot(qPortCalls, (snap: any) => {
+          const loadedPortCalls: PortCall[] = [];
+          snap.forEach((doc: any) => {
+            loadedPortCalls.push({ id: doc.id, ...doc.data() } as PortCall);
+          });
+          setBuques(loadedPortCalls);
+          if (loadedPortCalls.length > 0 && !selectedBuqueId) {
+            setSelectedBuqueId(loadedPortCalls[0].id);
+          }
+          setIsLoading(false);
+        });
+
+        // 2. B2B Port Calls
+        const qB2b = query(collection(db, "port_calls"), where("status", "==", "Programado"));
+        unsubscribeB2b = onSnapshot(qB2b, (snap) => {
+          const loadedB2B: B2BPortCall[] = [];
+          snap.forEach(doc => {
+            loadedB2B.push({ id: doc.id, ...doc.data() } as B2BPortCall);
+          });
+          setB2bRequests(loadedB2B);
+        });
+
+        // 3. Crews
+        let qCrews: any = collection(db, "crews");
+        if (adminUser && adminUser.port !== "GLOBAL") {
+           qCrews = query(collection(db, "crews"), where("port", "==", adminUser.port));
+        }
+        unsubscribeCrews = onSnapshot(qCrews, (snap: any) => {
+          const loadedCrews: StevedoreCrew[] = [];
+          snap.forEach((doc: any) => {
+            loadedCrews.push({ id: idClean(doc.id), ...doc.data() } as StevedoreCrew);
+          });
+          setCrews(loadedCrews);
+        });
+      });
+    } catch (err) {
+      console.error("Error loading operational dashboard database:", err);
+      setIsLoading(false);
+    }
+
+    return () => {
+      if (unsubscribePortCalls) unsubscribePortCalls();
+      if (unsubscribeB2b) unsubscribeB2b();
+      if (unsubscribeCrews) unsubscribeCrews();
+    };
+  }, []);
+
+  // Real-time synchronization of selected vessel's containers (stowage manifest)
+  const [containerUnsubscribe, setContainerUnsubscribe] = useState<any>(null);
+
   const loadVesselContainers = async (vesselId: string) => {
     setIsLoadingContainers(true);
+    if (containerUnsubscribe) {
+      containerUnsubscribe();
+    }
     try {
-      const snap = await getDocs(query(collection(db, "contenedores"), where("portcallId", "==", vesselId)));
-      const loadedCons: ContainerItem[] = [];
-      snap.forEach(doc => {
-         loadedCons.push({ id: doc.id, ...doc.data() } as ContainerItem);
+      import("firebase/firestore").then(({ collection, query, where, onSnapshot }) => {
+        const qC = query(collection(db, "contenedores"), where("portcallId", "==", vesselId));
+        const unsub = onSnapshot(qC, (snap) => {
+          const loadedCons: ContainerItem[] = [];
+          snap.forEach(doc => {
+             loadedCons.push({ id: doc.id, ...doc.data() } as ContainerItem);
+          });
+          setContainers(loadedCons);
+          setIsLoadingContainers(false);
+        });
+        setContainerUnsubscribe(() => unsub);
       });
-      setContainers(loadedCons);
     } catch (err) {
       console.error("Error loading stowage containers:", err);
-    } finally {
       setIsLoadingContainers(false);
     }
   };
-
-  // Trigger loading initial data on mount
-  useEffect(() => {
-    loadInitialData();
-  }, []);
 
   // Sync containers when selected vessel or active tab changes (to be fast)
   useEffect(() => {
@@ -211,7 +239,6 @@ export function AdminBuques() {
 
       await logAuditAction(`Actualizó estado buque ${vesselName} a ${newStatus}`, adminUser?.role, adminUser?.email);
       setCustomRemark("");
-      await loadInitialData();
     } catch(err) {
       console.error("Error updating status in DB:", err);
     } finally {
@@ -238,7 +265,6 @@ export function AdminBuques() {
 
       await logAuditAction(`Agregó bitácora/comentario a buque ${v.name}: ${customRemark}`, adminUser?.role, adminUser?.email);
       setCustomRemark("");
-      await loadInitialData();
     } catch(err) {
       console.error(err);
     } finally {
@@ -269,6 +295,7 @@ export function AdminBuques() {
         eta: newVesselETA,
         status: "Aprobado",
         berth: newVesselBerth,
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         hitos: [defaultHito]
       });
 
@@ -283,7 +310,6 @@ export function AdminBuques() {
       setShowManualModal(false);
       
       setSelectedBuqueId(newRef.id);
-      await loadInitialData();
     } catch (err) {
       console.error("Error creating manual Port Call:", err);
     } finally {
@@ -329,11 +355,12 @@ export function AdminBuques() {
         batch.set(docRef, {
           ...item,
           portcallId: vId,
-          userId: "CLIENT_B2B_MOCK" // Placeholder linking importer/exp customer
+          userId: "CLIENT_B2B_MOCK", // Placeholder linking importer/exp customer
+          port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
         });
       }
       await batch.commit();
-      await logAuditAction(`Autogeneró manifiesto operativo de estiba (${items.length} TEUs) para buque ${vName}`, "OFICINISTA_BUQUES", adminUser?.email);
+      await logAuditAction(`Autogeneró manifiesto operativo de estiba (${items.length} TEUs) para buque ${vName}`, "OFICIAL_BUQUES", adminUser?.email);
     } catch (e) {
       console.error("Error seeding containers: ", e);
     }
@@ -374,6 +401,7 @@ export function AdminBuques() {
         eta: new Date().toISOString().split("T")[0], // Assign current date as base
         status: "Aprobado",
         berth: selectedBerth,
+        port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         hitos: [defaultHito]
       });
 
@@ -382,7 +410,6 @@ export function AdminBuques() {
       await logAuditAction(`Aprobó escala B2B para buque ${req.vesselName} y asignó ${selectedBerth}`, adminUser?.role, adminUser?.email);
       
       setSelectedBuqueId(newRef.id);
-      await loadInitialData();
     } catch (err) {
       console.error("Error approving B2B Port Call:", err);
     } finally {
@@ -401,7 +428,6 @@ export function AdminBuques() {
        });
 
        await logAuditAction(`Asignó cuadrilla "${crewName}" al buque "${vessel.name}"`, adminUser?.role, adminUser?.email);
-       await loadInitialData();
     } catch(e) {
        console.error("Error assigning crew:", e);
     } finally {
@@ -420,7 +446,6 @@ export function AdminBuques() {
        });
 
        await logAuditAction(`Liberó cuadrilla "${crewName}" del buque`, adminUser?.role, adminUser?.email);
-       await loadInitialData();
     } catch(e) {
        console.error("Error releasing crew:", e);
     } finally {
@@ -448,7 +473,7 @@ export function AdminBuques() {
          timestamp: serverTimestamp()
       });
 
-      await logAuditAction(`Ordenó descarga de contenedor ${c.containerId} desde buque ${vessel.name}`, "OFICINISTA_BUQUES", adminUser?.email);
+      await logAuditAction(`Ordenó descarga de contenedor ${c.containerId} desde buque ${vessel.name}`, "OFICIAL_BUQUES", adminUser?.email);
       await loadVesselContainers(vessel.id);
     } catch (err) {
       console.error("Error discharging container:", err);
@@ -477,7 +502,7 @@ export function AdminBuques() {
          timestamp: serverTimestamp()
       });
 
-      await logAuditAction(`Inició carga de exportación para contenedor ${c.containerId} al buque ${vessel.name}`, "OFICINISTA_BUQUES", adminUser?.email);
+      await logAuditAction(`Inició carga de exportación para contenedor ${c.containerId} al buque ${vessel.name}`, "OFICIAL_BUQUES", adminUser?.email);
       await loadVesselContainers(vessel.id);
     } catch (err) {
        console.error("Error loading container:", err);
@@ -512,15 +537,16 @@ export function AdminBuques() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/*
           <button 
             type="button"
-            onClick={loadInitialData}
             title="Sincronizar base de datos"
             className="p-3 bg-white border border-border text-foreground-muted hover:text-primary hover:bg-slate-50 transition-all rounded shadow-sm flex items-center gap-2 text-xs font-mono font-bold"
           >
             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
             Sincronizar
           </button>
+          */}
           <button 
             onClick={() => setShowManualModal(true)}
             className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-5 py-3 rounded font-bold font-mono tracking-widest uppercase transition-all text-xs shadow-sm hover:translate-y-[-1px] active:translate-y-0"

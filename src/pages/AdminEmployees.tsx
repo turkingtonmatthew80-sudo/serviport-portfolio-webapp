@@ -9,9 +9,10 @@ import {
   Shield,
   Loader2,
   RefreshCcw,
-  X
+  X,
+  MapPin
 } from "lucide-react";
-import { Role, useAdminAuth } from "../contexts/AdminAuthContext";
+import { Role, PortLocation, useAdminAuth } from "../contexts/AdminAuthContext";
 import { logAuditAction } from "../lib/audit";
 
 interface Employee {
@@ -20,16 +21,31 @@ interface Employee {
   username: string;
   password?: string; // only for form, not best to show always but okay for internal 
   role: Role;
+  port: PortLocation;
   status: "active" | "inactive";
 }
 
 const CREATABLE_ROLES: Role[] = [
+  "GERENTE_GENERAL",
   "GERENTE_OPERACIONES",
-  "OFICINISTA_BUQUES",
-  "PLANIFICADOR_PATIO",
+  "DESPACHADOR_BUQUES",
+  "OFICIAL_BUQUES",
+  "AGENTE_DOCUMENTACION",
   "INSPECTOR_PUERTA",
+  "PLANIFICADOR_PATIO",
+  "COORDINADOR_TRAFICO",
+  "ESTIBADOR",
+  "SUPERVISOR_HSE",
   "CONTADOR",
-  "ESTIBADOR"
+  "FACTURADOR",
+  "ANALISTA_BI"
+];
+
+const PORTS: PortLocation[] = [
+  "Puerto Cabello",
+  "La Guaira",
+  "Maracaibo",
+  "Guanta"
 ];
 
 export function AdminEmployees() {
@@ -44,6 +60,7 @@ export function AdminEmployees() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("INSPECTOR_PUERTA");
+  const [port, setPort] = useState<PortLocation>("Puerto Cabello");
 
   const fetchEmployees = async () => {
     setIsLoading(true);
@@ -70,6 +87,7 @@ export function AdminEmployees() {
     setUsername("");
     setPassword("");
     setRole("INSPECTOR_PUERTA");
+    setPort("Puerto Cabello");
     setShowModal(true);
   };
 
@@ -78,6 +96,7 @@ export function AdminEmployees() {
     setUsername(emp.username);
     setPassword(emp.password || "");
     setRole(emp.role);
+    setPort(emp.port || "Puerto Cabello");
     setShowModal(true);
   };
 
@@ -92,8 +111,9 @@ export function AdminEmployees() {
           username,
           password,
           role,
+          port
         });
-        await logAuditAction(`Actualizó empleado (${username} a ${role})`, adminUser?.role, adminUser?.email);
+        await logAuditAction(`Actualizó empleado (${username} a ${role} en ${port})`, adminUser?.role, adminUser?.email);
       } else {
         // Create
         await addDoc(collection(db, "employees"), {
@@ -101,9 +121,10 @@ export function AdminEmployees() {
           username,
           password,
           role,
+          port,
           status: "active"
         });
-        await logAuditAction(`Creó empleado (${username} - ${role})`, adminUser?.role, adminUser?.email);
+        await logAuditAction(`Creó empleado (${username} - ${role} en ${port})`, adminUser?.role, adminUser?.email);
       }
       setShowModal(false);
       fetchEmployees();
@@ -182,6 +203,7 @@ export function AdminEmployees() {
                   <th className="px-6 py-4 font-bold">Empleado</th>
                   <th className="px-6 py-4 font-bold">Usuario ID</th>
                   <th className="px-6 py-4 font-bold">Rol Operativo</th>
+                  <th className="px-6 py-4 font-bold">Puerto Asignado</th>
                   <th className="px-6 py-4 font-bold">Estado</th>
                   <th className="px-6 py-4 font-bold text-right">Acciones</th>
                 </tr>
@@ -196,9 +218,14 @@ export function AdminEmployees() {
                       {emp.name}
                     </td>
                     <td className="px-6 py-4 font-mono text-foreground-muted">{emp.username}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 flex flex-col gap-1 items-start">
                       <span className="bg-primary/10 text-primary px-2.5 py-1 rounded font-mono text-[10px] font-bold tracking-widest border border-primary/20 block w-fit">
                         {emp.role.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="flex items-center gap-1 text-slate-500 font-mono text-xs font-bold uppercase tracking-widest">
+                         <MapPin size={12} /> {emp.port || "NO ASIGNADO"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -266,6 +293,17 @@ export function AdminEmployees() {
                     className="w-full px-4 py-3 bg-white border border-border text-foreground rounded focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm uppercase transition-colors"
                   >
                     {CREATABLE_ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground-muted mb-2 uppercase tracking-wide font-mono">Puerto Asignado</label>
+                  <select 
+                    value={port} onChange={e => setPort(e.target.value as PortLocation)}
+                    className="w-full px-4 py-3 bg-white border border-border text-foreground rounded focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm uppercase transition-colors"
+                  >
+                    {PORTS.map(p => <option key={p} value={p}>{p}</option>)}
+                    {role === "GERENTE_GENERAL" && <option value="GLOBAL">GLOBAL (TODOS)</option>}
                   </select>
                 </div>
 

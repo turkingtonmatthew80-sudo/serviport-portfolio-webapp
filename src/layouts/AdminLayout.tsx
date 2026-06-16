@@ -18,32 +18,58 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "../lib/utils";
 
 const roleNavigation: Record<string, { name: string; path: string; icon: any }[]> = {
-  SUPERADMIN: [
-    { name: "Dashboard Sistema", path: "/admin/dashboard", icon: LayoutDashboard },
+  GERENTE_GENERAL: [
+    { name: "Dashboard Global", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Terminal Financiero", path: "/admin/contador", icon: DollarSign },
+    { name: "Nómina Venezolana", path: "/admin/nomina", icon: Users },
+    { name: "Monitoreo Scraper", path: "/admin/scraper-panel", icon: Map },
+    { name: "Catálogo Buques", path: "/admin/catalogo-buques", icon: Ship },
     { name: "Gestión Empleados", path: "/admin/empleados", icon: Users },
     { name: "Configuración", path: "/admin/configuracion", icon: Settings },
   ],
   GERENTE_OPERACIONES: [
-    { name: "Dashboard Operaciones", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard Puerto", path: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Aprobaciones", path: "/admin/aprobaciones", icon: Shield },
     { name: "Monitoreo TOS 2D", path: "/admin/monitoreo-tos", icon: Map },
     { name: "Cuadrillas y Turnos", path: "/admin/cuadrillas", icon: Users },
     { name: "Rendimiento y KPIs", path: "/admin/rendimiento", icon: TrendingUp },
   ],
+  DESPACHADOR_BUQUES: [
+    { name: "Atención Buques (Husbandry)", path: "/admin/buques", icon: Ship },
+  ],
+  OFICIAL_BUQUES: [
+    { name: "Control Operaciones (TOS)", path: "/admin/buques", icon: Ship },
+    { name: "Catálogo Buques Global", path: "/admin/catalogo-buques", icon: Ship },
+    { name: "Monitoreo TOS 2D", path: "/admin/monitoreo-tos", icon: Map },
+  ],
+  AGENTE_DOCUMENTACION: [
+    { name: "Gestión Documental", path: "/admin/documentos", icon: Box },
+    { name: "Catálogo Buques Global", path: "/admin/catalogo-buques", icon: Ship },
+  ],
   PLANIFICADOR_PATIO: [
     { name: "Planificador de Patio", path: "/admin/yard", icon: Map },
   ],
   INSPECTOR_PUERTA: [
-    { name: "Gate Control", path: "/admin/gate", icon: Truck },
+    { name: "Control de Acceso (Gate)", path: "/admin/gate", icon: Truck },
   ],
-  OFICINISTA_BUQUES: [
-    { name: "Control Buques", path: "/admin/buques", icon: Ship },
+  COORDINADOR_TRAFICO: [
+    { name: "Despacho Transporte", path: "/admin/trafico", icon: Truck },
+  ],
+  ESTIBADOR: [
+    { name: "Mis Tareas Operativas", path: "/admin/estibador", icon: Box },
+  ],
+  SUPERVISOR_HSE: [
+    { name: "Control Incidentes HSE", path: "/admin/hse", icon: Shield },
   ],
   CONTADOR: [
     { name: "Terminal Financiero", path: "/admin/dashboard", icon: DollarSign },
+    { name: "Nómina Venezolana", path: "/admin/nomina", icon: Users },
   ],
-  ESTIBADOR: [
-    { name: "Mis Tareas", path: "/admin/estibador", icon: Box },
+  FACTURADOR: [
+    { name: "Disbursement Accounts", path: "/admin/da", icon: DollarSign },
+  ],
+  ANALISTA_BI: [
+    { name: "Dashboards BI", path: "/admin/dashboard", icon: TrendingUp },
   ],
 };
 
@@ -171,8 +197,8 @@ export function AdminLayout() {
           <div className="flex items-center gap-3 relative" ref={userMenuRef}>
             <div className="text-right hidden sm:block">
               <p className="font-bold text-secondary text-sm">{adminUser.name}</p>
-              <p className="text-primary text-xs font-mono font-bold tracking-widest uppercase">
-                {adminUser.role.replace('_', ' ')}
+              <p className="text-primary text-[10px] font-mono font-bold tracking-widest uppercase">
+                {adminUser.role.replace('_', ' ')} • {adminUser.port}
               </p>
             </div>
             <button 

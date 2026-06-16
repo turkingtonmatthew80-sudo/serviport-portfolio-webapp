@@ -5,6 +5,7 @@ import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
+import { generateDisbursementAccountPDF } from "../lib/pdfGenerator";
 
 interface ApprovalRef {
   id: string;
@@ -24,12 +25,24 @@ export function AdminAprobaciones() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const snap = await getDocs(collection(db, "approvals"));
+        const { query, where } = await import("firebase/firestore");
+        const currentPort = adminUser?.port;
+        const isGlobal = currentPort === "GLOBAL";
+
+        let qApprovals: any = collection(db, "approvals");
+        if (!isGlobal) {
+            qApprovals = query(collection(db, "approvals"), where("port", "==", currentPort));
+        }
+        const snap = await getDocs(qApprovals);
         const loaded: ApprovalRef[] = [];
         snap.forEach(doc => loaded.push({ id: doc.id, ...doc.data() } as ApprovalRef));
         setApprovals(loaded);
 
-        const pcSnap = await getDocs(collection(db, "portcalls"));
+        let qPortcalls: any = collection(db, "portcalls");
+        if (!isGlobal) {
+            qPortcalls = query(collection(db, "portcalls"), where("port", "==", currentPort));
+        }
+        const pcSnap = await getDocs(qPortcalls);
         const pcLoaded: any[] = [];
         pcSnap.forEach(doc => {
            if(doc.data().status === "Programado") {
@@ -45,7 +58,7 @@ export function AdminAprobaciones() {
       }
     };
     loadData();
-  }, []);
+  }, [adminUser]);
 
   const handleApprove = async (id: string, isPortCall: boolean = false) => {
     try {
@@ -74,6 +87,25 @@ export function AdminAprobaciones() {
       await logAuditAction(`Rechazó solicitud ${id}`, adminUser?.role, adminUser?.email);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleTelegramRequest = async (id: string, name: string) => {
+    try {
+      await fetch("/api/telegram-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "request_approval",
+          portCallId: id,
+          buque: name
+        })
+      });
+      alert(`Mensaje enviado al Bot de Telegram para el buque ${name}`);
+      await logAuditAction(`Envió solicitud a Telegram bot para ${id}`, adminUser?.role, adminUser?.email);
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo conectar con el Bot de Telegram Local.");
     }
   };
 
@@ -139,9 +171,18 @@ export function AdminAprobaciones() {
                    <p className="text-sm text-foreground-muted">IMO: <span className="font-bold">{pc.imo}</span></p>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                   <button className="flex items-center gap-2 px-4 py-2 border border-border text-secondary hover:bg-slate-100 font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm">
-                      <FileText size={16} /> Ver Detalles
+                <div className="flex flex-wrap items-center gap-3 shrink-0 justify-end md:justify-start">
+                   <button 
+                      onClick={() => generateDisbursementAccountPDF({ vesselName: pc.name, port: pc.port || "Puerto Cabello", owner: "Naviera A", eta: pc.eta })}
+                      className="flex items-center gap-2 px-3 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm"
+                   >
+                      <FileText size={16} /> GENERAR DA (PDF)
+                   </button>
+                   <button 
+                      onClick={() => handleTelegramRequest(pc.id, pc.name)}
+                      className="flex items-center gap-2 px-3 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-secondary font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm"
+                   >
+                      BOT SENIAT
                    </button>
                    <button onClick={() => handleReject(pc.id, true)} className="p-2 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors shadow-sm" title="Rechazar">
                       <X size={20} />

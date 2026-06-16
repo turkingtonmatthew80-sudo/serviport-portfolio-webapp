@@ -28,7 +28,8 @@ export type RoleId =
   | "importador"
   | "exportador"
   | "agente_aduana"
-  | "transportista";
+  | "transportista"
+  | "consolidador";
 
 export interface User {
   id: string;

@@ -191,6 +191,47 @@ export function PortalLayout() {
     });
   }
 
+  if (user.roles.includes("consolidador")) {
+    groups.push({
+      title: "CONSOLIDADOR NVOCC",
+      items: [
+        {
+          name: "Dashboard Consolidador",
+          path: "/portal/consolidador/dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          name: "Máster B/L",
+          path: "/portal/consolidador/master",
+          icon: Ship,
+        },
+        {
+          name: "House B/L",
+          path: "/portal/consolidador/house",
+          icon: FileText,
+        },
+      ],
+    });
+  }
+
+  if (user.roles.includes("armador")) {
+    groups.push({
+      title: "ARMADOR",
+      items: [
+        {
+          name: "Dashboard Armador",
+          path: "/portal/armador/dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          name: "Aprobación DA",
+          path: "/portal/armador/cuentas",
+          icon: FileText,
+        },
+      ],
+    });
+  }
+
   groups.push({
     title: "GENERAL",
     items: [
