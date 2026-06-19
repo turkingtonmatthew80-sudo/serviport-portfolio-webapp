@@ -19,17 +19,17 @@ import {
 } from "firebase/firestore";
 import TelegramBot from "node-telegram-bot-api";
 
-import admin from "firebase-admin";
+import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin (Fallback for Server Node environments)
 try {
   // @ts-ignore
-  if (!admin.apps.length) {
+  if (!admin.apps?.length) {
     admin.initializeApp();
     console.log("[FIREBASE ADMIN] Inicializado correctamente en el servidor.");
   }
-} catch (e) {
-  console.warn("[FIREBASE ADMIN] No se pudo inicializar (Verificar credenciales GOOGLE_APPLICATION_CREDENTIALS):", e);
+} catch (e: any) {
+  console.warn("[FIREBASE ADMIN] No se pudo inicializar (Verificar credenciales GOOGLE_APPLICATION_CREDENTIALS):", e.message);
 }
 
 const firebaseConfig = {
