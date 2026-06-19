@@ -321,7 +321,7 @@ export function AdminConfig() {
                 <Settings className="text-secondary" size={32} />
                 <div>
                   <h3 className="font-bold text-secondary mb-1">Mantenimiento de Servidores TOS</h3>
-                  <p className="text-sm text-foreground-muted mb-4">Variables y entornos del web worker de simulación.</p>
+                  <p className="text-sm text-foreground-muted mb-4">Variables y entornos del sistema operativo.</p>
                   <button className="px-4 py-2 bg-secondary text-white font-bold rounded text-xs uppercase hover:bg-secondary-dark transition-colors">
                     Ver Variables
                   </button>

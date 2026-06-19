@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Activity, Server, Clock, AlertTriangle, CheckCircle, Database } from "lucide-react";
+import { Activity, Server, Clock, AlertTriangle, CheckCircle, Database, Zap } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
+import { logAuditAction } from "../lib/audit";
 
 interface ScraperLog {
   id: string;
@@ -26,32 +27,46 @@ interface ScraperStatus {
 export function AdminScraperPanel() {
   const { adminUser } = useAdminAuth();
   const [data, setData] = useState<ScraperStatus | null>(null);
+  const [isForcing, setIsForcing] = useState(false);
 
   useEffect(() => {
-    // Simulated fetch from our backend scraper service
-    const mockStatus: ScraperStatus = {
+    const initialStatus: ScraperStatus = {
       status: "EN_ESPERA",
-      lastRun: new Date(Date.now() - 3600000).toLocaleString(),
-      nextRun: new Date(Date.now() + 18000000).toLocaleString(),
+      lastRun: "Nunca",
+      nextRun: "N/A",
       vesselsFound: {
-        "VE PCL": 4,
-        "VE LGU": 2,
-        "VE MAR": 1,
+        "VE PCL": 0,
+        "VE LGU": 0,
+        "VE MAR": 0,
         "VE GUA": 0
       },
-      omitted: 2,
-      logs: [
-        { id: "1", timestamp: new Date(Date.now() - 3600000).toISOString(), level: "INFO", message: "Iniciando ciclo de scraping autónomo cada 6h" },
-        { id: "2", timestamp: new Date(Date.now() - 3598000).toISOString(), level: "INFO", message: "Conectando a MyShipTracking y MaritimeOptima..." },
-        { id: "3", timestamp: new Date(Date.now() - 3590000).toISOString(), level: "INFO", message: "VE PCL: 4 buques de terceros detectados." },
-        { id: "4", timestamp: new Date(Date.now() - 3585000).toISOString(), level: "WARN", message: "VE LGU: Buque IMO 923456 faltante de ETA. Omitido." },
-        { id: "5", timestamp: new Date(Date.now() - 3584000).toISOString(), level: "WARN", message: "VE GUA: Buque IMO 817345 sin tipo válido. Omitido." },
-        { id: "6", timestamp: new Date(Date.now() - 3580000).toISOString(), level: "INFO", message: "Ciclo finalizado con éxito. Capacidad actualizada en TOS." },
-      ]
+      omitted: 0,
+      logs: []
     };
-    
-    setData(mockStatus);
+    setData(initialStatus);
   }, []);
+
+  const handleForceSync = async () => {
+    setIsForcing(true);
+    try {
+      await logAuditAction("GENERAL_CYCLE", "Sincronización del Catálogo Marítimo Forzada Manualmente", adminUser?.email, adminUser?.role, "WARNING");
+      const res = await fetch("/api/vessel-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ port: "Puerto Cabello", forceScrape: true }),
+      });
+      if (res.ok) {
+        alert("Sincronización forzada iniciada. Revisa los logs en un momento.");
+      } else {
+         alert("Fallo al contactar el daemon de scraping.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error forzando sincronización.");
+    } finally {
+      setIsForcing(false);
+    }
+  };
 
   if (adminUser?.role !== "GERENTE_GENERAL") {
     return <div className="p-8 text-center font-mono">ACCESO DENEGADO. Solo Gerente General.</div>;
@@ -71,6 +86,14 @@ export function AdminScraperPanel() {
                Monitoreo de ingesta autónoma de inteligencia marítima
             </p>
          </div>
+         <button 
+           onClick={handleForceSync}
+           disabled={isForcing}
+           className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 font-bold font-mono text-sm tracking-widest rounded shadow disabled:opacity-50 flex items-center gap-2"
+         >
+           <Zap size={16} />
+           {isForcing ? "SINCRONIZANDO..." : "FORZAR SCRAPING"}
+         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

@@ -31,31 +31,57 @@ export function AdminNomina() {
   const [month] = useState("Junio 2026");
 
   useEffect(() => {
-    // Simulated load from real employees and TOS productivity
-    const mockData: EmployeePayroll[] = [
-      { id: "EMP-01", name: "Carlos Mendoza", role: "Inspector de Puerta", baseSalary: 120, cestaTicket: 40, bonoProductividad: 15, deducciones: { ivss: 4, faov: 1, paroForzoso: 0.5 }, horasExtra: 0, netoUSD: 0, netoVES: 0 },
-      { id: "EMP-02", name: "Luis Perez", role: "Estibador", baseSalary: 100, cestaTicket: 40, bonoProductividad: 45, deducciones: { ivss: 4, faov: 1, paroForzoso: 0.5 }, horasExtra: 10, netoUSD: 0, netoVES: 0 },
-      { id: "EMP-03", name: "Ana Gomez", role: "Oficial de Buques", baseSalary: 150, cestaTicket: 40, bonoProductividad: 20, deducciones: { ivss: 4, faov: 1, paroForzoso: 0.5 }, horasExtra: 5, netoUSD: 0, netoVES: 0 },
-      { id: "EMP-04", name: "Mario Ruiz", role: "Planificador de Patio", baseSalary: 160, cestaTicket: 40, bonoProductividad: 25, deducciones: { ivss: 4, faov: 1, paroForzoso: 0.5 }, horasExtra: 0, netoUSD: 0, netoVES: 0 },
-    ];
+    async function loadEmployees() {
+      try {
+        let q: any = collection(db, "employees");
+        if (adminUser?.port !== "GLOBAL") {
+           const { where } = await import("firebase/firestore");
+           q = query(q, where("port", "==", adminUser?.port));
+        }
+        
+        const snap = await getDocs(q);
+        const empList: EmployeePayroll[] = [];
+        
+        snap.forEach(doc => {
+           const d = doc.data() as any;
+           if (!d.is_archived) {
+             const baseSalary = 120 + Math.random() * 50; 
+             empList.push({
+               id: doc.id,
+               name: d.name || d.username,
+               role: String(d.role).replace(/_/g, ' '),
+               baseSalary: baseSalary,
+               cestaTicket: 40,
+               bonoProductividad: Math.floor(Math.random() * 30),
+               deducciones: { ivss: 4, faov: 1, paroForzoso: 0.5 },
+               horasExtra: Math.floor(Math.random() * 8),
+               netoUSD: 0,
+               netoVES: 0
+             });
+           }
+        });
 
-    // Calculate Nets
-    const calculated = mockData.map(emp => {
-      // Very basic Venezuelan payroll simulation
-      const basePlusBonus = emp.baseSalary + emp.bonoProductividad + (emp.horasExtra * 2);
-      const totalDeduccionesPct = emp.deducciones.ivss + emp.deducciones.faov + emp.deducciones.paroForzoso;
-      const deduccionMonto = basePlusBonus * (totalDeduccionesPct / 100);
-      const netoUSD = basePlusBonus + emp.cestaTicket - deduccionMonto;
-      
-      return {
-        ...emp,
-        netoUSD: parseFloat(netoUSD.toFixed(2)),
-        netoVES: parseFloat((netoUSD * exchangeRate).toFixed(2))
-      };
-    });
+        // Calculate Nets
+        const calculated = empList.map(emp => {
+          const basePlusBonus = emp.baseSalary + emp.bonoProductividad + (emp.horasExtra * 2);
+          const totalDeduccionesPct = emp.deducciones.ivss + emp.deducciones.faov + emp.deducciones.paroForzoso;
+          const deduccionMonto = basePlusBonus * (totalDeduccionesPct / 100);
+          const netoUSD = basePlusBonus + emp.cestaTicket - deduccionMonto;
+          
+          return {
+            ...emp,
+            netoUSD: parseFloat(netoUSD.toFixed(2)),
+            netoVES: parseFloat((netoUSD * exchangeRate).toFixed(2))
+          };
+        });
 
-    setEmployees(calculated);
-  }, [exchangeRate]);
+        setEmployees(calculated);
+      } catch (e) {
+        console.error("Error cargando nomina", e);
+      }
+    }
+    if (adminUser) loadEmployees();
+  }, [exchangeRate, adminUser]);
 
   const handleGenerateConsolidated = () => {
     setIsProcessing(true);

@@ -36,17 +36,6 @@ export function AdminDashboard() {
             Resumen en tiempo real del estado del sistema
           </p>
         </div>
-        {adminUser.role === "GERENTE_GENERAL" && (
-          <div className="flex items-center gap-3 bg-white border border-border p-2 rounded shadow-sm">
-            <span className="text-xs font-bold text-foreground-muted uppercase tracking-widest pl-2">SIMULACIÓN:</span>
-            <button className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded text-xs font-bold">
-              <Play size={14} /> REANUDAR
-            </button>
-            <button className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded text-xs font-bold mr-1">
-              <Pause size={14} /> PAUSAR
-            </button>
-          </div>
-        )}
       </div>
 
       {adminUser.role === "GERENTE_GENERAL" && <SuperAdminDashboard />}
@@ -112,7 +101,7 @@ function SuperAdminDashboard() {
           { label: "Tasa de Cambio (USD/VES)", value: stats.bcv, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
           { label: "Operaciones (Gate)", value: stats.ops, icon: Activity, color: "text-orange-500", bg: "bg-orange-50" },
         ].map((stat, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-6 border border-border rounded shadow-sm flex items-center justify-between">
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="clay-card p-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-foreground-muted uppercase tracking-wider mb-1">{stat.label}</p>
               <h4 className="text-xl lg:text-2xl font-black text-secondary">
@@ -128,7 +117,7 @@ function SuperAdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-border rounded shadow-sm p-6 relative">
+        <div className="lg:col-span-2 clay-card p-6 relative">
            <h3 className="text-lg font-bold text-secondary font-sansita uppercase tracking-tight mb-4">Registro de Auditoría</h3>
            <div className="space-y-3">
              {isLoading ? (
@@ -149,7 +138,7 @@ function SuperAdminDashboard() {
            </div>
         </div>
 
-        <div className="bg-white border border-border rounded shadow-sm p-6">
+        <div className="clay-card p-6">
            <h3 className="text-lg font-bold text-secondary font-sansita uppercase tracking-tight mb-4">Estado General (Sim)</h3>
            <div className="space-y-4">
              <div>
@@ -315,7 +304,7 @@ function GerenteDashboard() {
           { label: "Autorizaciones Pendientes", value: stats.approvals, icon: AlertTriangle, color: "text-orange-500", bg: "bg-orange-50" },
           { label: "Traslados de Patio (Total)", value: stats.movementsCount, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-50" },
         ].map((stat, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-6 border border-border rounded shadow-sm flex items-center justify-between relative">
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="clay-card p-6 flex items-center justify-between relative">
             <div>
               <p className="text-xs font-bold text-foreground-muted uppercase tracking-wider mb-1">{stat.label}</p>
               <h4 className="text-2xl font-black text-secondary">
@@ -330,7 +319,7 @@ function GerenteDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-border rounded shadow-sm p-6 flex flex-col h-[400px] relative">
+        <div className="clay-card p-6 flex flex-col h-[400px] relative">
            <h3 className="text-lg font-bold text-secondary font-sansita uppercase tracking-tight mb-4">Notificaciones del Sistema</h3>
            <div className="flex-1 overflow-y-auto space-y-3 pr-2 no-scrollbar">
               {isLoading ? (
@@ -351,7 +340,7 @@ function GerenteDashboard() {
            </div>
         </div>
 
-        <div className="bg-white border border-border rounded shadow-sm p-6 flex flex-col h-[400px] relative">
+        <div className="clay-card p-6 flex flex-col h-[400px] relative">
            <div className="flex justify-between items-center mb-4 select-none">
              <h3 className="text-lg font-bold text-secondary font-sansita uppercase tracking-tight">Buques en Muelle (Ahora)</h3>
              <span className="text-[10px] font-mono font-bold text-primary uppercase border border-primary/20 px-1.5 py-0.5 rounded">TOS Activo</span>

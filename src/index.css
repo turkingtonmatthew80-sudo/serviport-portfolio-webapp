@@ -54,8 +54,20 @@
     min-height: 100vh;
     overflow-x: hidden;
     background-color: var(--background);
+    background-image: radial-gradient(at 10% 20%, rgba(0, 169, 206, 0.09) 0px, transparent 50%),
+                      radial-gradient(at 90% 10%, rgba(247, 148, 29, 0.08) 0px, transparent 50%),
+                      radial-gradient(at 50% 80%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
+    background-attachment: fixed;
     color: var(--foreground);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+  
+  .dark body {
+    background-image: radial-gradient(at 10% 20%, rgba(0, 169, 206, 0.14) 0px, transparent 50%),
+                      radial-gradient(at 90% 10%, rgba(247, 148, 29, 0.12) 0px, transparent 50%),
+                      radial-gradient(at 50% 80%, rgba(15, 23, 42, 0.9) 0px, transparent 50%);
+  }
+
   #root {
     width: 100%;
     min-height: 100vh;
@@ -76,6 +88,249 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
+}
+
+@utility clay-card {
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 10px 10px 24px rgba(11, 26, 46, 0.06), 
+              -10px -10px 24px rgba(255, 255, 255, 0.8),
+              inset 5px 5px 12px rgba(255, 255, 255, 0.8), 
+              inset -5px -5px 12px rgba(11, 26, 46, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .clay-card {
+  background: rgba(19, 32, 54, 0.65);
+  box-shadow: 10px 10px 24px rgba(0, 0, 0, 0.3), 
+              -10px -10px 24px rgba(255, 255, 255, 0.02),
+              inset 5px 5px 12px rgba(255, 255, 255, 0.1), 
+              inset -5px -5px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@utility clay-card-primary {
+  background: rgba(0, 169, 206, 0.8);
+  box-shadow: 10px 10px 24px rgba(0, 169, 206, 0.2), 
+              -10px -10px 24px rgba(255, 255, 255, 0.1),
+              inset 5px 5px 12px rgba(255, 255, 255, 0.5), 
+              inset -5px -5px 12px rgba(0, 90, 110, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(12px);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility clay-card-accent {
+  background: rgba(247, 148, 29, 0.82);
+  box-shadow: 10px 10px 24px rgba(247, 148, 29, 0.2), 
+              -10px -10px 24px rgba(255, 255, 255, 0.1),
+              inset 5px 5px 12px rgba(255, 255, 255, 0.5), 
+              inset -5px -5px 12px rgba(150, 80, 10, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(12px);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility clay-card-emerald {
+  background: rgba(16, 185, 129, 0.8);
+  box-shadow: 10px 10px 24px rgba(16, 185, 129, 0.2), 
+              inset 5px 5px 12px rgba(255, 255, 255, 0.5), 
+              inset -5px -5px 12px rgba(6, 95, 70, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(12px);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility clay-card-rose {
+  background: rgba(244, 63, 94, 0.8);
+  box-shadow: 10px 10px 24px rgba(244, 63, 94, 0.2), 
+              inset 5px 5px 12px rgba(255, 255, 255, 0.5), 
+              inset -5px -5px 12px rgba(159, 18, 57, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(12px);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility clay-button-primary {
+  background: #00A9CE;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.85rem;
+  box-shadow: 4px 4px 10px rgba(0, 169, 206, 0.25), 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.5), 
+              inset -3px -3px 6px rgba(0, 90, 110, 0.25);
+  color: white !important;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 14px rgba(0, 169, 206, 0.35), 
+                inset 4px 4px 8px rgba(255, 255, 255, 0.6), 
+                inset -4px -4px 8px rgba(0, 90, 110, 0.2);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 2px 2px 5px rgba(0, 169, 206, 0.15), 
+                inset 4px 4px 8px rgba(0, 90, 110, 0.35), 
+                inset -2px -2px 5px rgba(255, 255, 255, 0.3);
+  }
+}
+
+@utility clay-button-accent {
+  background: #F7941D;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.85rem;
+  box-shadow: 4px 4px 10px rgba(247, 148, 29, 0.25), 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.5), 
+              inset -3px -3px 6px rgba(150, 80, 10, 0.25);
+  color: white !important;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 14px rgba(247, 148, 29, 0.35), 
+                inset 4px 4px 8px rgba(255, 255, 255, 0.6), 
+                inset -4px -4px 8px rgba(150, 80, 10, 0.2);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 2px 2px 5px rgba(247, 148, 29, 0.15), 
+                inset 4px 4px 8px rgba(150, 80, 10, 0.35), 
+                inset -2px -2px 5px rgba(255, 255, 255, 0.3);
+  }
+}
+
+@utility clay-button-secondary {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 0.85rem;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.05), 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.9), 
+              inset -3px -3px 6px rgba(0, 0, 0, 0.05);
+  color: var(--foreground-muted);
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    color: var(--primary);
+    box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.08), 
+                inset 4px 4px 8px rgba(255, 255, 255, 0.95);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.03), 
+                inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+  }
+}
+
+.dark .clay-button-secondary {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2), 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.1), 
+              inset -3px -3px 6px rgba(0, 0, 0, 0.3);
+  color: var(--foreground);
+
+  &:hover {
+    box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.25), 
+                inset 4px 4px 8px rgba(255, 255, 255, 0.15);
+  }
+}
+
+@utility clay-input {
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 0.85rem;
+  box-shadow: inset 4px 4px 8px rgba(163, 177, 198, 0.35), 
+              inset -4px -4px 8px rgba(255, 255, 255, 0.9),
+              1px 1px 3px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
+  outline: none;
+
+  &:focus {
+    border-color: #00A9CE;
+    box-shadow: inset 4px 4px 8px rgba(163, 177, 198, 0.2), 
+                inset -4px -4px 8px rgba(255, 255, 255, 0.9),
+                0 0 0 3px rgba(0, 169, 206, 0.15);
+  }
+}
+
+.dark .clay-input {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.5), 
+              inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+
+  &:focus {
+    box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), 
+                inset -4px -4px 8px rgba(255, 255, 255, 0.05),
+                0 0 0 3px rgba(0, 169, 206, 0.2);
+  }
+}
+
+@utility clay-pill {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.04), 
+              inset 2px 2px 4px rgba(255, 255, 255, 0.8), 
+              inset -2px -2px 4px rgba(0, 0, 0, 0.04);
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+}
+
+.dark .clay-pill {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2), 
+              inset 2px 2px 4px rgba(255, 255, 255, 0.05), 
+              inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+@utility clay-divider {
+  height: 8px;
+  width: 100%;
+  background: rgba(241, 245, 249, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  box-shadow: inset 2px 2px 5px rgba(148, 163, 184, 0.3),
+              inset -2px -2px 5px rgba(255, 255, 255, 0.9),
+              1px 1px 2px rgba(0, 0, 0, 0.01);
+  display: block;
+}
+
+.dark .clay-divider {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.5),
+              inset -2px -2px 5px rgba(255, 255, 255, 0.04);
 }
 
 @layer base {

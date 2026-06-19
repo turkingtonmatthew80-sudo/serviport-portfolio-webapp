@@ -21,6 +21,7 @@ interface PortCall {
   eta: string;
   status: "Aprobado" | "En Rada" | "Atracado" | "En Operación" | "Finalizado";
   berth: string;
+  requiresOvertime?: boolean;
   hitos?: Array<{
     status: string;
     timestamp: any;
@@ -64,7 +65,7 @@ interface StevedoreCrew {
   shift: string;
 }
 
-type TabType = "timeline" | "manifest" | "crews" | "b2b";
+type TabType = "timeline" | "manifest" | "crews" | "b2b" | "husbandry";
 
 export function AdminBuques() {
   const { adminUser } = useAdminAuth();
@@ -214,6 +215,7 @@ export function AdminBuques() {
     setProcessingId(id);
     try {
       const hitoItem = {
+        id: crypto.randomUUID(),
         status: newStatus,
         timestamp: new Date().toISOString(),
         user: adminUser?.email || "vessel.clerk@serviport.com.ve",
@@ -253,6 +255,7 @@ export function AdminBuques() {
     setProcessingId("remark");
     try {
       const hitoItem = {
+        id: crypto.randomUUID(),
         status: `${v.status} (Nota)`,
         timestamp: new Date().toISOString(),
         user: adminUser?.email || "vessel.clerk@serviport.com.ve",
@@ -281,11 +284,21 @@ export function AdminBuques() {
     }
     setProcessingId("manual-vessel");
     try {
+      // Overtime Logic Check (Resolution #12)
+      let needsOvertime = false;
+      let finalRemarks = "Planificación de recalada creada de forma manual en el sistema TOS.";
+      const etaDate = new Date(newVesselETA);
+      if (etaDate.getHours() >= 17 || etaDate.getHours() < 7 || etaDate.getDay() === 0 || etaDate.getDay() === 6) {
+        needsOvertime = true;
+        finalRemarks += " [REQUIRES_HABILITACION] Operación programada fuera de horario hábil. Se requiere habilitación especial aduanera (Overtime).";
+      }
+
       const defaultHito = {
+        id: crypto.randomUUID(),
         status: "Aprobado",
         timestamp: new Date().toISOString(),
         user: adminUser?.email || "vessel.clerk@serviport.com.ve",
-        remarks: "Planificación de recalada creada de forma manual en el sistema TOS."
+        remarks: finalRemarks
       };
 
       const newRef = await addDoc(collection(db, "portcalls"), {
@@ -295,6 +308,7 @@ export function AdminBuques() {
         eta: newVesselETA,
         status: "Aprobado",
         berth: newVesselBerth,
+        requiresOvertime: needsOvertime,
         port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         hitos: [defaultHito]
       });
@@ -355,6 +369,8 @@ export function AdminBuques() {
         batch.set(docRef, {
           ...item,
           portcallId: vId,
+          vesselRef: vId,       // Trazabilidad MACRO-MICRO State Machine
+          cycleId: docRef.id,   // ContainerCycleID / BookingCycleID
           userId: "CLIENT_B2B_MOCK", // Placeholder linking importer/exp customer
           port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello")
         });
@@ -387,11 +403,21 @@ export function AdminBuques() {
       });
 
       // 2. Clone/Create matching record in "portcalls" internal TOS
+      let needsOvertime = false;
+      let finalRemarks = `Solicitud de escala Naviera B2B aprobada formalmente. Puesto asignado: ${selectedBerth}.`;
+      // Usually B2B has a real ETA but let's mock the check using now date
+      const etaDate = new Date();
+      if (etaDate.getHours() >= 17 || etaDate.getHours() < 7 || etaDate.getDay() === 0 || etaDate.getDay() === 6) {
+        needsOvertime = true;
+        finalRemarks += " [REQUIRES_HABILITACION] Operación programada fuera de horario hábil. Se requiere habilitación especial aduanera.";
+      }
+
       const defaultHito = {
+        id: crypto.randomUUID(),
         status: "Aprobado",
         timestamp: new Date().toISOString(),
         user: adminUser?.email || "vessel.clerk@serviport.com.ve",
-        remarks: `Solicitud de escala Naviera B2B aprobada formalmente. Puesto asignado: ${selectedBerth}.`
+        remarks: finalRemarks
       };
 
       const newRef = await addDoc(collection(db, "portcalls"), {
@@ -401,6 +427,7 @@ export function AdminBuques() {
         eta: new Date().toISOString().split("T")[0], // Assign current date as base
         status: "Aprobado",
         berth: selectedBerth,
+        requiresOvertime: needsOvertime,
         port: adminUser?.port === "GLOBAL" ? "Puerto Cabello" : (adminUser?.port || "Puerto Cabello"),
         hitos: [defaultHito]
       });
@@ -602,6 +629,11 @@ export function AdminBuques() {
                       {b.status}
                     </span>
                   </div>
+                  {b.requiresOvertime && (
+                      <span className="mb-2 inline-flex items-center gap-1 text-[9px] uppercase font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded tracking-widest">
+                          <AlertCircle size={10} /> REQUIRES_HABILITACION
+                      </span>
+                  )}
 
                   <div className="text-xs text-foreground-muted flex flex-col gap-1.5 font-mono">
                     <div className="flex items-center gap-2"><Flag size={12} className="text-sky-500"/> {b.operator}</div>
@@ -673,7 +705,9 @@ export function AdminBuques() {
                   { id: "timeline", label: "Línea de Tiempo", icon: CalendarClock },
                   { id: "manifest", label: "Manifiesto Estiba (TEUs)", icon: Box },
                   { id: "crews", label: "Asignar Estibadores", icon: Users },
-                  { id: "b2b", label: "Solicitudes B2B", icon: FileText, badge: b2bRequests.length }
+                  { id: "b2b", label: "Solicitudes B2B", icon: FileText, badge: b2bRequests.length },
+                  ...(adminUser?.role === "GERENTE_GENERAL" || adminUser?.role === "GERENTE_OPERACIONES" || adminUser?.role === "DESPACHADOR_BUQUES" 
+                    ? [{ id: "husbandry", label: "Husbandry / Capitanía", icon: Anchor }] : [])
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -1107,6 +1141,71 @@ export function AdminBuques() {
                         )}
                       </div>
 
+                    </motion.div>
+                  )}
+                  {/* TAB 5: Husbandry / Capitanía */}
+                  {activeTab === "husbandry" && (
+                    <motion.div 
+                      key="husbandry" 
+                      initial={{ opacity: 0, y: 10 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      exit={{ opacity: 0, y: -10 }}
+                      className="space-y-6 flex-1 flex flex-col"
+                    >
+                       <div className="flex justify-between items-center bg-slate-50 border border-border p-4 rounded">
+                         <div>
+                            <h3 className="font-bold text-secondary text-sm font-mono tracking-wide uppercase flex items-center gap-2"><Anchor size={16} className="text-secondary" /> Módulo Integral de Husbandry</h3>
+                            <p className="text-xs text-foreground-muted font-sans mt-0.5">Control de despachos, avituallamiento, MARPOL, sanidad e INEA.</p>
+                         </div>
+                       </div>
+                       
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {/* Widget Capitanía */}
+                          <div className="border border-border rounded bg-white p-4 flex flex-col gap-3">
+                             <div className="flex items-center gap-2 text-primary font-bold border-b border-border pb-2">
+                                <Flag size={16} /> <span className="text-xs uppercase font-mono tracking-wide">Despacho Capitanía de Puerto</span>
+                             </div>
+                             <p className="text-xs text-foreground-muted font-sans">Declaración General, Lista de Tripulantes, Solicitud de Despacho de Entrada y Salida.</p>
+                             <div className="mt-auto pt-2 grid grid-cols-1 gap-2">
+                               <button className="py-2 px-3 bg-slate-100 hover:bg-slate-200 border border-border rounded text-[10px] font-bold font-mono text-slate-700 uppercase" onClick={() => alert("Documento PDF generado para presentar en Capitanía.")}>Imprimir Doc Pre-arribo</button>
+                               <button className="py-2 px-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-[10px] font-bold font-mono text-blue-700 uppercase" onClick={() => alert("Zarpe autorizado por INEA.")}>Solicitar Zarpe</button>
+                             </div>
+                          </div>
+
+                          {/* Widget MARPOL */}
+                          <div className="border border-border rounded bg-white p-4 flex flex-col gap-3">
+                             <div className="flex items-center gap-2 text-amber-600 font-bold border-b border-border pb-2">
+                                <AlertCircle size={16} /> <span className="text-xs uppercase font-mono tracking-wide">Control Residuos MARPOL</span>
+                             </div>
+                             <p className="text-xs text-foreground-muted font-sans">Notificación de volúmenes de residuos oleosos, aguas sucias, basura y emisión atmosférica.</p>
+                             <div className="mt-auto pt-2">
+                               <button className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded text-[10px] font-bold font-mono text-amber-700 uppercase" onClick={() => alert("Certificado MARPOL enviado a Autoridad.")}>Declarar Residuos</button>
+                             </div>
+                          </div>
+
+                          {/* Widget Avituallamiento / Ship Chandlers */}
+                          <div className="border border-border rounded bg-white p-4 flex flex-col gap-3">
+                             <div className="flex items-center gap-2 text-emerald-600 font-bold border-b border-border pb-2">
+                                <Box size={16} /> <span className="text-xs uppercase font-mono tracking-wide">Ship Chandlers (Avituallamiento)</span>
+                             </div>
+                             <p className="text-xs text-foreground-muted font-sans">Coordinación de suministro de provisiones de boca, agua dulce, repuestos, equipos y lubricantes.</p>
+                             <div className="mt-auto pt-2">
+                               <button className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded text-[10px] font-bold font-mono text-emerald-700 uppercase" onClick={() => alert("Orden de provisiones y bunker generada.")}>Coordinar Próvision</button>
+                             </div>
+                          </div>
+
+                          {/* Widget Práctico y Remolcadores */}
+                          <div className="border border-border rounded bg-white p-4 flex flex-col gap-3">
+                             <div className="flex items-center gap-2 text-indigo-600 font-bold border-b border-border pb-2">
+                                <MapPin size={16} /> <span className="text-xs uppercase font-mono tracking-wide">Servicios Náuticos Conexos</span>
+                             </div>
+                             <p className="text-xs text-foreground-muted font-sans">Solicitud obligatoria de Práctico y Remolcadores para maniobras de atraque y desatraque (24h antelación).</p>
+                             <div className="mt-auto pt-2 grid grid-cols-2 gap-2">
+                               <button className="py-2 px-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded text-[10px] font-bold font-mono text-indigo-700 uppercase leading-tight text-center" onClick={() => alert("Práctico Solicitado.")}>Práctico (Pilot)</button>
+                               <button className="py-2 px-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded text-[10px] font-bold font-mono text-indigo-700 uppercase leading-tight text-center" onClick={() => alert("Remolcador Solicitado.")}>Remolcado (Tug)</button>
+                             </div>
+                          </div>
+                       </div>
                     </motion.div>
                   )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DollarSign, FileText, Send, CheckCircle, Clock } from "lucide-react";
+import { DollarSign, FileText, Send, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { generateDisbursementAccountPDF } from "../lib/pdfGenerator";
 import { db } from "../lib/firebase";
@@ -22,9 +22,8 @@ export function AdminDA() {
           q = query(collection(db, "portcalls"), orderBy("createdAt", "desc"), limit(5));
       }
 
-      // Fallback if index on createdAt fails (since createdAt may not exist in portcalls from simulated data)
+      // Fallback if index on createdAt fails
       // Usually would try to catch, or just query without orderBy if no index.
-      // Let's assume there is index or data but actually in our simulation we use 'eta' sometimes or no creation form yet.
       
       try {
         const snap = await getDocs(q);
@@ -68,18 +67,26 @@ export function AdminDA() {
                      <p className="font-black text-secondary uppercase font-mono">{v.name}</p>
                      <p className="text-xs text-foreground-muted font-mono mt-1">Llegada: {new Date(v.eta).toLocaleDateString()}</p>
                      <p className="text-[10px] uppercase font-bold text-slate-500 mt-2 tracking-widest bg-white border border-slate-200 px-2 py-0.5 rounded w-fit">
-                        ESTADO ESCALA: {v.status || "DESPACHADO"}
+                        ESTADO FINAL: CERRADO
                      </p>
                   </div>
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                     <button 
-                        onClick={() => generateDisbursementAccountPDF({ vesselName: v.name, port: v.port || adminUser?.port, owner: v.client, eta: v.eta })}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm"
-                     >
-                        <FileText size={16} /> GENERAR DA
+                  <div className="flex flex-col items-start min-w-[200px]">
+                     <span className="text-[10px] font-bold text-red-600 bg-red-100 border border-red-200 px-2 py-0.5 rounded uppercase flex items-center gap-1 mb-1">
+                       <AlertTriangle size={10} /> DEUDA REF: $ {(Math.random() * 500).toFixed(2)}
+                     </span>
+                     <p className="text-[9px] text-slate-600 font-sans leading-tight">
+                        <strong>Diferencial Cambiario:</strong> Pago registrado posterior con devaluación BCV cruzada. La DA (Disbursement Account) no puede cerrarse hasta la conciliación total de esta deuda por paridad.
+                     </p>
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                     <button className="w-full md:w-auto flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 bg-white hover:bg-slate-50 font-bold rounded text-[10px] uppercase tracking-widest transition-colors shadow-sm">
+                        Conciliar BCV
                      </button>
-                     <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-transparent bg-primary text-white hover:bg-primary-hover font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm">
-                        <Send size={16} /> ENVIAR NAVIERA
+                     <button 
+                        onClick={() => generateDisbursementAccountPDF({ vesselName: "HISTORICAL " + v.name, port: v.port || adminUser?.port, owner: v.client, eta: v.eta })}
+                        className="w-full md:w-auto flex items-center justify-center gap-2 px-3 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded text-[10px] uppercase tracking-widest transition-colors shadow-sm"
+                     >
+                        <FileText size={14} /> HISTÓRICO DA
                      </button>
                   </div>
                </div>

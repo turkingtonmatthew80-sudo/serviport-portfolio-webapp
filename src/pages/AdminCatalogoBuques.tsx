@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Ship, Search, Anchor, Filter, Info, Map } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
+import { db } from "../lib/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 
 interface ScrapedVessel {
   id: string;
@@ -8,8 +10,8 @@ interface ScrapedVessel {
   imo: string;
   type: string;
   lastSeenPort: string;
-  eta: string;
-  etd: string;
+  eta?: string;
+  updatedAt?: any;
 }
 
 export function AdminCatalogoBuques() {
@@ -19,23 +21,26 @@ export function AdminCatalogoBuques() {
   const [vessels, setVessels] = useState<ScrapedVessel[]>([]);
 
   useEffect(() => {
-    // Simulated catalog built from the Scraping engine
-    const mockVessels: ScrapedVessel[] = [
-      { id: "1", name: "MSC ROSARIA", imo: "9312456", type: "Portacontenedores", lastSeenPort: "VE PCL", eta: "2026-06-16 14:00", etd: "2026-06-18 10:00" },
-      { id: "2", name: "ZIM LUANDA", imo: "9456123", type: "Portacontenedores", lastSeenPort: "VE LGU", eta: "2026-06-15 08:00", etd: "2026-06-17 22:00" },
-      { id: "3", name: "MT NIKOS", imo: "9123847", type: "Tanquero", lastSeenPort: "VE PCL", eta: "2026-06-17 06:00", etd: "2026-06-19 12:00" },
-      { id: "4", name: "CLIPPER MAJESTIC", imo: "9781293", type: "Granelero", lastSeenPort: "VE MAR", eta: "2026-06-16 11:00", etd: "2026-06-20 08:00" },
-      { id: "5", name: "HOEGH OSAKA", imo: "9186352", type: "RO-RO", lastSeenPort: "VE PCL", eta: "2026-06-18 07:00", etd: "2026-06-19 18:00" },
-      { id: "6", name: "SEABOARD OCEAN", imo: "9438911", type: "Portacontenedores", lastSeenPort: "VE GUA", eta: "2026-06-15 13:00", etd: "2026-06-16 23:00" },
-    ];
-    setVessels(mockVessels);
+    // Escuchar colección real del Scraper
+    const unsub = onSnapshot(collection(db, "catalogo_buques"), (snap) => {
+      const data: ScrapedVessel[] = [];
+      snap.forEach(doc => {
+        data.push({ id: doc.id, ...doc.data() } as ScrapedVessel);
+      });
+      setVessels(data);
+    });
+
+    return () => unsub();
   }, []);
 
   const filteredVessels = vessels.filter(v => {
     if (filterType !== "ALL" && v.type !== filterType) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      return v.name.toLowerCase().includes(term) || v.imo.includes(term);
+      // v.name or v.imo could be undefined depending on scraper data
+      const name = v.name || "";
+      const imo = v.imo || "";
+      return name.toLowerCase().includes(term) || imo.includes(term);
     }
     return true;
   });

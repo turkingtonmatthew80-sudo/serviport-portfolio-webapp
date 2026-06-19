@@ -1,6 +1,99 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+export function generateRendimientoPDF(dbStats: any) {
+  const doc = new jsPDF();
+  
+  doc.setFillColor(11, 26, 46);
+  doc.rect(0, 0, 210, 25, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("SERVIPORT - Reporte de Rendimiento General (KPI)", 14, 16);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(12);
+  doc.text(`Fecha de Emisión: ${new Date().toLocaleDateString('es-VE')}`, 14, 40);
+
+  doc.setFontSize(14);
+  doc.text("Resumen de Telemetría (Operaciones de la Temporada)", 14, 55);
+
+  autoTable(doc, {
+    startY: 65,
+    head: [['Métrica Operativa', 'Valor']],
+    body: [
+      ['Cuadrillas de Estiba Activas (crews)', dbStats.crewsCount],
+      ['Total Órdenes de Patio (yard_movements)', dbStats.movementsCount],
+      ['Total Escalas (portcalls)', dbStats.portcallsCount],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [11, 26, 46] },
+  });
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Reporte generado por el módulo de Inteligencia de Negocios (BI) - Serviport OS.", 14, (doc as any).lastAutoTable.finalY + 20);
+
+  doc.save(`Rendimiento_Global_${new Date().getTime()}.pdf`);
+}
+
+export function generateEIRPDF(eirData: any) {
+  const doc = new jsPDF();
+  
+  doc.setFillColor(11, 26, 46);
+  doc.rect(0, 0, 210, 25, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("SERVIPORT - Equipment Interchange Receipt (EIR)", 14, 16);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`EIR NO: ${eirData.eirNumber || "EIR-UNKNOWN"}`, 14, 40);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Tipo Movimiento: ${eirData.type === "IN" ? "INGRESO - INBOUND" : "DESPACHO - OUTBOUND"}`, 14, 48);
+  doc.text(`Fecha/Hora: ${eirData.timestamp?.toDate ? eirData.timestamp.toDate().toLocaleString('es-VE') : new Date().toLocaleString('es-VE')}`, 14, 55);
+  doc.text(`Inspector: ${eirData.inspector}`, 14, 62);
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("Datos de la Unidad:", 14, 75);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Contenedor: ${eirData.container}`, 14, 82);
+  doc.text(`Tipo Contenedor: ${eirData.containerType || "40' Dry Van"}`, 14, 89);
+  doc.text(`Precinto (Sello): ${eirData.sealNumber || "N/A"}`, 14, 96);
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("Datos del Transporte:", 120, 75);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Placa (Chuto): ${eirData.placa}`, 120, 82);
+  doc.text(`Chofer: ${eirData.driverName}`, 120, 89);
+  doc.text(`Cédula: ${eirData.cedula}`, 120, 96);
+
+  doc.line(14, 110, 200, 110);
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("Inspección de Tránsito (Intacto)", 14, 120);
+  doc.setFont("helvetica", "normal");
+  doc.text("Frontal OK | Laterales OK | Techo OK | Piso OK | Puerta OK | Precinto OK", 14, 127);
+  
+  doc.line(14, 160, 80, 160);
+  doc.text("Firma Inspector", 30, 168);
+  
+  doc.line(120, 160, 186, 160);
+  doc.text("Firma Chofer", 136, 168);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text("Este boleto EIR de intercambio certifica que el contenedor reportado fue verificado físicamente y coincide con los precintos aportados por el manifiesto aduanal. Serviport no se responsabiliza por daños internos posteriores al egreso.", 14, 190, { maxWidth: 180 });
+
+  doc.save(`EIR_${eirData.eirNumber || eirData.id || "Document"}.pdf`);
+}
+
 export function generateDisbursementAccountPDF(daData: any) {
   const doc = new jsPDF();
   
@@ -182,4 +275,99 @@ export function generateSecondaryManifestPDF(data: any) {
   doc.text("Generado por Serviport OS", 14, (doc as any).lastAutoTable.finalY + 20);
   
   doc.save(`Manifiesto_Secundario_${data.masterBL}.pdf`);
+}
+
+export function generateFacturaFiscalPDF(invoice: any) {
+  const doc = new jsPDF();
+  
+  doc.setFillColor(11, 26, 46);
+  doc.rect(0, 0, 210, 30, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("SERVIPORT", 14, 20);
+
+  doc.setFontSize(12);
+  doc.text("FACTURA FISCAL SENIAT", 120, 20);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Cliente: ${invoice.clientName || 'CLIENTE'}`, 14, 45);
+  doc.text(`RIF: ${invoice.clientRIF || 'J-XXXXXXXX-X'}`, 14, 52);
+  doc.text(`Buque: ${invoice.vesselName || 'N/A'}`, 14, 59);
+  
+  doc.text(`Control No: ${invoice.controlNo || 'N/A'}`, 120, 45);
+  doc.text(`Fecha Emisión: ${invoice.issueDate || new Date().toLocaleDateString()}`, 120, 52);
+  doc.text(`Tasa BCV: Bs. ${invoice.exchangeRate ? invoice.exchangeRate.toFixed(4) : '36.45'}`, 120, 59);
+
+  const rows = (invoice.items || []).map((i: any, index: number) => [
+    (index + 1).toString(),
+    i.concept,
+    i.qty.toString(),
+    `$${i.unitPrice.toFixed(2)}`,
+    ((invoice.exchangeRate || 36.45) * i.unitPrice).toFixed(2),
+    `$${i.total.toFixed(2)}`,
+    ((invoice.exchangeRate || 36.45) * i.total).toFixed(2)
+  ]);
+
+  autoTable(doc, {
+    startY: 70,
+    head: [['#', 'Concepto', 'Cant', 'Precio ($)', 'Precio (Bs)', 'Total ($)', 'Total (Bs)']],
+    body: rows,
+    theme: 'grid',
+    styles: { fontSize: 8, font: "helvetica" },
+    headStyles: { fillColor: [15, 23, 42], textColor: 255 }
+  });
+
+  const finalY = (doc as any).lastAutoTable.finalY || 100;
+
+  doc.setFont("helvetica", "bold");
+  doc.text(`SUBTOTAL: $${(invoice.subtotalUSD || 0).toFixed(2)}  / Bs. ${(invoice.subtotalVES || 0).toFixed(2)}`, 110, finalY + 15);
+  doc.text(`IVA (16%): $${(invoice.taxUSD || 0).toFixed(2)}  / Bs. ${(invoice.taxVES || 0).toFixed(2)}`, 110, finalY + 22);
+  doc.setFontSize(12);
+  doc.text(`TOTAL GENERAL: $${(invoice.totalUSD || 0).toFixed(2)} / Bs. ${(invoice.totalVES || 0).toFixed(2)}`, 100, finalY + 32);
+
+  doc.save(`Factura_Fiscal_${invoice.controlNo}.pdf`);
+}
+
+export function generateHSEIncidentPDF(incident: any) {
+  const doc = new jsPDF();
+  
+  doc.setFillColor(152, 27, 27); // Dark red for HSE
+  doc.rect(0, 0, 210, 25, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Providencia de Reporte INPSASEL", 105, 16, { align: "center" });
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text(`INCIDENTE REF: ${incident.id || "HSE-UNKNOWN"}`, 14, 40);
+  
+  doc.setFont("helvetica", "normal");
+  doc.text(`Fecha y Hora: ${incident.timestamp || new Date().toLocaleString()}`, 14, 48);
+  doc.text(`Zona / Instalación: ${incident.zone || "No Especificada"}`, 14, 55);
+  doc.text(`Categoría: ${incident.category || "General"}`, 14, 62);
+  doc.text(`Reportado por: ${incident.reporter || "Personal HSE"}`, 14, 69);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Descripción de los Hechos:", 14, 85);
+  doc.setFont("helvetica", "normal");
+  const splitTitle = doc.splitTextToSize(incident.description || 'Sin descripción detallada.', 180);
+  doc.text(splitTitle, 14, 92);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Medidas Tomadas:", 14, 115);
+  doc.setFont("helvetica", "normal");
+  const splitAction = doc.splitTextToSize(incident.actionTaken || 'Evaluación preliminar en proceso.', 180);
+  doc.text(splitAction, 14, 122);
+
+  doc.line(14, 180, 80, 180);
+  doc.text("Firma o Sello HSE Servport", 14, 188);
+
+  doc.save(`Reporte_HSE_${incident.id || 'INC'}.pdf`);
 }

@@ -27,7 +27,7 @@ export function LegalDocsPage() {
      return () => { if (unsub) unsub(); }
   }, [docId]);
 
-  const simulateTelegramDispatch = async (e: React.FormEvent) => {
+  const handleTelegramDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
     setTelegramStatus("sending");
     
@@ -164,7 +164,7 @@ export function LegalDocsPage() {
              </h3>
              <p className="text-xs text-slate-400 mb-6 font-sans">Gateway directo con Capitanía y Autoridades.</p>
 
-             <form onSubmit={simulateTelegramDispatch} className="space-y-4 relative z-10 text-slate-800">
+             <form onSubmit={handleTelegramDispatch} className="space-y-4 relative z-10 text-slate-800">
                  <div>
                    <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-300 mb-1">Buque</label>
                    <select 

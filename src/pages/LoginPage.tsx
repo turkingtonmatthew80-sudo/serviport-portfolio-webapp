@@ -259,10 +259,10 @@ export function LoginPage() {
                   </p>
                 </div>
 
-                <div className="bg-background rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-border">
+                <div className="clay-card p-8">
                   <form className="space-y-6" onSubmit={handleLogin}>
                     {error && (
-                      <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm border border-red-100 flex items-start gap-3">
+                      <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm border border-red-100 flex items-start gap-3 shadow-inner">
                         <div className="mt-0.5 shrink-0 bg-red-100 rounded-full p-1">
                           <X size={14} className="text-red-600" />
                         </div>
@@ -284,7 +284,7 @@ export function LoginPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           autoComplete="email"
-                          className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-gray-300 text-foreground bg-background-muted/50 hover:bg-background focus:bg-background"
+                          className="w-full pl-10 pr-4 py-3 clay-input text-foreground"
                           placeholder="usuario@empresa.com"
                         />
                       </div>
@@ -313,7 +313,7 @@ export function LoginPage() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           autoComplete="current-password"
-                          className="w-full pl-10 pr-10 py-3 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-gray-300 text-foreground bg-background-muted/50 hover:bg-background focus:bg-background"
+                          className="w-full pl-10 pr-10 py-3 clay-input text-foreground"
                           placeholder="••••••••"
                         />
                         <button
@@ -333,11 +333,11 @@ export function LoginPage() {
                     <button
                       type="submit"
                       disabled={isLoading || isGoogleLoading}
-                      className="w-full bg-secondary text-white px-6 py-3.5 rounded-lg font-bold hover:bg-slate-800 focus:ring-4 focus:ring-secondary/20 transition-all shadow-md flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="w-full clay-button-primary py-3.5 uppercase tracking-wider text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 size={20} className="animate-spin" />
+                          <Loader2 size={18} className="animate-spin" />
                           <span>VERIFICANDO...</span>
                         </>
                       ) : (
@@ -356,7 +356,7 @@ export function LoginPage() {
                         <div className="w-full border-t border-border"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-background text-foreground-muted">
+                        <span className="px-2 bg-transparent text-foreground-muted font-bold">
                           O continuar con
                         </span>
                       </div>
@@ -366,7 +366,7 @@ export function LoginPage() {
                       type="button"
                       onClick={handleGoogleLogin}
                       disabled={isLoading || isGoogleLoading}
-                      className="w-full bg-background border border-border text-foreground-muted px-6 py-3.5 rounded-lg font-bold hover:bg-background-muted transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="w-full clay-button-secondary py-3.5 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-sm uppercase tracking-wider font-bold"
                     >
                       {isGoogleLoading ? (
                         <Loader2 size={20} className="animate-spin" />
@@ -374,7 +374,7 @@ export function LoginPage() {
                         <svg className="h-5 w-5" viewBox="0 0 24 24">
                           <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                            fill="#4285F4"
+                             fill="#4285F4"
                           />
                           <path
                             d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
@@ -390,7 +390,7 @@ export function LoginPage() {
                           />
                         </svg>
                       )}
-                      <span>Google</span>
+                      <span>Google Business</span>
                     </button>
                   </form>
                 </div>

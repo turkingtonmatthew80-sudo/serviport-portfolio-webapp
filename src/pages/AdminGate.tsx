@@ -7,7 +7,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { 
   collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, 
-  doc, updateDoc, where, getDoc 
+  doc, updateDoc, where, getDoc, setDoc
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
@@ -78,7 +78,11 @@ export function AdminGate() {
   const [containerType, setContainerType] = useState("40' High Cube");
   const [sealNumber, setSealNumber] = useState("");
   const [flowType, setFlowType] = useState<"EXPORTACION_ENTREGA" | "VACIO_ENTREGA" | "IMPORTACION_RETIRADA">("EXPORTACION_ENTREGA");
-  const [containerCondition, setContainerCondition] = useState("ÓPTIMO - SIN DAÑOS VISIBLES");
+  
+  // Physical Checklist EIR
+  const [hasDamage, setHasDamage] = useState(false);
+  const [damageNotes, setDamageNotes] = useState("");
+  const [containerCondition, setContainerCondition] = useState("ÓPTIMO");
   
   // Photo simulator state
   const [hasCapturedTruck, setHasCapturedTruck] = useState(false);
@@ -191,7 +195,6 @@ export function AdminGate() {
     loadSystemReferenceData();
   }, [activeTab]);
 
-  // Triggered when clicking a truck in our live queues (simulate automatic OCR filling)
   const handleProcessQueueItem = (item: QueueItem) => {
     setPlaca(item.plate);
     setDriverName(item.driverName);
@@ -213,7 +216,7 @@ export function AdminGate() {
       setSealNumber("");
     }
 
-    // Trigger OCR fake capture sounds or highlights
+    // Trigger OCR status indicators
     setHasCapturedTruck(true);
     setHasCapturedContainer(true);
     setHasCapturedSeal(true);
@@ -223,8 +226,8 @@ export function AdminGate() {
     audio.play().catch(() => {}); // Optional scan chirp
   };
 
-  // Perform interactive simulation photography
-  const handleTriggerMockCamera = () => {
+  // Process interactive camera feeds
+  const handleTriggerCamera = () => {
     if (activeCamAngle === "frontal") {
       setHasCapturedTruck(true);
       setActiveCamAngle("lateral");
@@ -237,7 +240,7 @@ export function AdminGate() {
     }
   };
 
-  const handleResetMockCamera = () => {
+  const handleResetCamera = () => {
     setHasCapturedTruck(false);
     setHasCapturedContainer(false);
     setHasCapturedSeal(false);
@@ -302,9 +305,12 @@ export function AdminGate() {
         const checkSnap = await getDocs(qCheck);
         
         if (checkSnap.empty) {
-          await addDoc(collection(db, "contenedores"), {
+          const cRef = doc(collection(db, "contenedores"));
+          await setDoc(cRef, {
             containerId: cleanContainerId,
             type: containerType,
+            cycleId: cRef.id,
+            vesselRef: "", // Unassigned to vessel yet (Bottom-up flow)
             status: "Disponible",
             location: "AGD PATIO EXPORTACIÓN",
             sealNumber: sealNumber.toUpperCase() || "SL-MOCK-9921",
@@ -321,9 +327,12 @@ export function AdminGate() {
 
       // 3. Insert empty container into AGD zone
       if (flowType === "VACIO_ENTREGA" && cleanContainerId) {
-        await addDoc(collection(db, "contenedores"), {
+        const cRef = doc(collection(db, "contenedores"));
+        await setDoc(cRef, {
           containerId: cleanContainerId,
           type: containerType,
+          cycleId: cRef.id,
+          vesselRef: "", // Empty container waiting for allocation
           status: "Disponible",
           location: "AGD PATIO VACÍOS",
           sealNumber: "N/A - VACÍO",
@@ -363,7 +372,7 @@ export function AdminGate() {
       setBooking("");
       setContainer("");
       setSealNumber("");
-      handleResetMockCamera();
+      handleResetCamera();
 
       setSuccessEvent(`Ingreso registrado exitosamente. EIR Generado: ${eirId}`);
       setTimeout(() => setSuccessEvent(null), 7000);
@@ -436,7 +445,7 @@ export function AdminGate() {
       setBooking("");
       setContainer("");
       setSealNumber("");
-      handleResetMockCamera();
+      handleResetCamera();
 
       setSuccessEvent(`Retiro completado e EIR ${eirId} impreso para transportista.`);
       setTimeout(() => setSuccessEvent(null), 6000);
@@ -459,14 +468,14 @@ export function AdminGate() {
 
    // Searching database containers for withdrawal matches (available options)
   const pickupEligibleContainers = dbContainers.filter(c => {
-    // Only items that are in warehouse and available ("Disponible") can be withdrawn
-    const isAvailable = c.status === "Disponible";
+    // Only items that are in warehouse and available ("Disponible") or blocked ("SENIAT_REPARO") can be viewed for withdrawal
+    const isAvailableOrBlocked = c.status === "Disponible" || c.status === "SENIAT_REPARO";
     
     // Support searching container code
     if (searchContainerQuery) {
-      return isAvailable && c.containerId.toLowerCase().includes(searchContainerQuery.toLowerCase());
+      return isAvailableOrBlocked && c.containerId.toLowerCase().includes(searchContainerQuery.toLowerCase());
     }
-    return isAvailable;
+    return isAvailableOrBlocked;
   }).map(c => {
     // Generate a pseudo-random arrival date for Free Time calculations local simulation
     // Using containerId characters to remain deterministic
@@ -474,7 +483,7 @@ export function AdminGate() {
     const daysInPort = (charSum % 25) + 1; // 1 to 25 days
     const freeTimeAllowed = 14; // Typical Free Time is 14 days
     const overstayDays = Math.max(0, daysInPort - freeTimeAllowed);
-    return { ...c, daysInPort, overstayDays, freeTimeAllowed };
+    return { ...c, daysInPort, overstayDays, freeTimeAllowed, isBlocked: c.status === "SENIAT_REPARO" };
   });
 
   return (
@@ -578,7 +587,7 @@ export function AdminGate() {
              </div>
           </div>
 
-          {/* SIMULACIÓN LECTURA OCR MOCK MONITOR */}
+          {/* LECTURA OCR MONITOR */}
           <div className="bg-slate-950 text-slate-200 p-5 rounded border border-slate-900 shadow-lg font-mono text-xs space-y-4 relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
              
@@ -627,7 +636,7 @@ export function AdminGate() {
                   key={t.id}
                   onClick={() => {
                      setActiveTab(t.id as any);
-                     handleResetMockCamera();
+                     handleResetCamera();
                   }}
                   className={`flex-1 text-center py-2.5 rounded transition-all ${
                      activeTab === t.id 
@@ -815,14 +824,43 @@ export function AdminGate() {
                              </div>
                           )}
 
-                          <div className="space-y-1">
-                             <label className="block text-[10px] font-bold text-secondary uppercase font-mono tracking-widest">Apreciación de Integridad / Chasis</label>
-                             <input 
-                               value={containerCondition} 
-                               onChange={e=>setContainerCondition(e.target.value)} 
-                               type="text" 
-                               className="w-full text-xs font-sans bg-slate-50 border border-border px-3 py-2.5 rounded focus:outline-none focus:border-primary" 
-                             />
+                          <div className="space-y-3 bg-slate-100 p-4 rounded border border-slate-200">
+                             <label className="block text-[10px] font-bold text-secondary uppercase font-mono tracking-widest flex items-center gap-2">
+                               <ShieldCheck size={14} className="text-primary"/> Checklist Físico Dinámico EIR
+                             </label>
+                             <div className="flex items-center gap-3">
+                               <input 
+                                 type="checkbox" 
+                                 id="hasDamage"
+                                 checked={hasDamage}
+                                 onChange={(e) => {
+                                   setHasDamage(e.target.checked);
+                                   if (e.target.checked) setContainerCondition("DAMAGE_REPORTED");
+                                   else setContainerCondition("ÓPTIMO - SIN DAÑOS VISIBLES");
+                                 }}
+                                 className="w-4 h-4 text-primary bg-white border-slate-300 rounded focus:ring-primary"
+                               />
+                               <label htmlFor="hasDamage" className="text-xs font-bold text-slate-700">Registrar Avería Física (Golpes, Lona Rota, Daño Interno)</label>
+                             </div>
+                             {hasDamage && (
+                               <div className="space-y-1">
+                                 <label className="block text-[10px] font-bold text-red-600 uppercase font-mono tracking-widest">Descripción de la Avería (DAMAGE_REPORTED)</label>
+                                 <textarea
+                                   required={hasDamage}
+                                   value={damageNotes}
+                                   onChange={e => {
+                                      setDamageNotes(e.target.value);
+                                      setContainerCondition("DAMAGE_REPORTED: " + e.target.value);
+                                   }}
+                                   rows={2}
+                                   className="w-full text-xs font-sans bg-white border border-red-300 px-3 py-2 rounded focus:outline-none focus:border-red-500"
+                                   placeholder="Ej: Lona superior desgarrada. Rayones mayores en panel lateral derecho."
+                                 ></textarea>
+                                 <p className="text-[9px] text-red-500 italic mt-1">
+                                   * Esta acción cambiará el estado a DAMAGE_REPORTED, alertará a la Torre de Control y notificará a la Naviera B2B.
+                                 </p>
+                               </div>
+                             )}
                           </div>
 
                           <div className="pt-4 border-t border-border">
@@ -847,7 +885,7 @@ export function AdminGate() {
                           </div>
                           <button 
                             type="button"
-                            onClick={handleResetMockCamera}
+                            onClick={handleResetCamera}
                             className="bg-slate-800 hover:bg-slate-705 text-slate-300 font-bold px-2.5 py-1 text-[9px] font-mono border border-slate-700 uppercase rounded transition-colors"
                           >
                              Limpiar Cámaras
@@ -943,7 +981,7 @@ export function AdminGate() {
                           </p>
                           <button
                             type="button"
-                            onClick={handleTriggerMockCamera}
+                            onClick={handleTriggerCamera}
                             className="bg-primary hover:bg-primary-dark text-white font-extrabold font-mono tracking-wider text-[10.5px] uppercase py-2.5 px-4 rounded shadow-sm flex items-center gap-2 transition"
                           >
                              <Camera size={14} /> Disparar Captura
@@ -1329,8 +1367,9 @@ export function AdminGate() {
                   <div className="bg-slate-50 border-t border-border px-5 py-3.5 flex justify-end gap-2.5 shrink-0 select-none">
                      <button 
                        onClick={() => {
-                          alert("Preparando impresión ticket fiscal de puerto... El sistema simula la petición de descarga de EIR en formato PDF compatible.");
-                          window.print();
+                          import("../lib/pdfGenerator").then(mod => {
+                            mod.generateEIRPDF(selectedEIR);
+                          });
                        }}
                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-border text-slate-700 font-bold font-mono tracking-wide rounded text-xs flex items-center gap-1.5 transition-colors"
                      >

@@ -17,7 +17,7 @@ export function ExportadorIngresos() {
   const fetchIngresos = async () => {
     if (!user) return;
     try {
-      const snap = await getDocs(query(collection(db, "anuncios_ingreso"), where("exportadorId", "==", user.uid)));
+      const snap = await getDocs(query(collection(db, "anuncios_ingreso"), where("exportadorId", "==", user.id)));
       setIngresos(snap.docs.map(d => ({id: d.id, ...d.data()})));
     } catch(e) {}
   };
@@ -28,7 +28,7 @@ export function ExportadorIngresos() {
       await addDoc(collection(db, "anuncios_ingreso"), {
         ...formData,
         status: "Anunciado",
-        exportadorId: user?.uid,
+        exportadorId: user?.id,
         createdAt: new Date().toISOString()
       });
       setShowModal(false);

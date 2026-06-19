@@ -14,7 +14,7 @@ export function TransportistaOrdenes() {
   const fetchOrders = async () => {
     try {
       const snap = await getDocs(query(collection(db, "eir_orders")));
-      setOrders(snap.docs.map(d => ({id: d.id, ...d.data()})).filter(o => o.status !== "Completado"));
+      setOrders(snap.docs.map(d => ({id: d.id, ...(d.data() as any)})).filter(o => o.status !== "Completado"));
     } catch(e) {}
   };
 

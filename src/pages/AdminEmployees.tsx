@@ -68,7 +68,10 @@ export function AdminEmployees() {
       const snap = await getDocs(collection(db, "employees"));
       const list: Employee[] = [];
       snap.forEach(doc => {
-        list.push({ id: doc.id, ...(doc.data() as any) } as Employee);
+        const data = doc.data() as any;
+        if (!data.is_archived) {
+          list.push({ id: doc.id, ...data } as Employee);
+        }
       });
       setEmployees(list);
     } catch (error) {
@@ -151,13 +154,17 @@ export function AdminEmployees() {
   };
   
   const handleDelete = async (id: string, empUsername: string) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar a este empleado permanentemente?")) return;
+    if (!confirm("¿Estás seguro de que quieres archivar a este empleado?")) return;
     try {
-       await deleteDoc(doc(db, "employees", id));
-       await logAuditAction(`Eliminó empleado ${empUsername}`, adminUser?.role, adminUser?.email);
+       await updateDoc(doc(db, "employees", id), {
+         is_archived: true,
+         archived_at: new Date().toISOString(),
+         archived_by: adminUser?.email || "SuperAdmin"
+       });
+       await logAuditAction("GENERAL_CYCLE", `Archivó empleado ${empUsername}`, adminUser?.email, adminUser?.role, "WARNING");
        fetchEmployees();
     } catch (error) {
-       alert("Error al eliminar");
+       alert("Error al archivar");
     }
   };
 

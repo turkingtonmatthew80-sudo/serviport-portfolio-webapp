@@ -39,6 +39,7 @@ import { AdminAprobaciones } from "./pages/AdminAprobaciones";
 import { AdminYard } from "./pages/AdminYard";
 import { AdminGate } from "./pages/AdminGate";
 import { AdminBuques } from "./pages/AdminBuques";
+import { AdminContador } from "./pages/AdminContador";
 import { AdminTrafico } from "./pages/AdminTrafico";
 import { AdminDA } from "./pages/AdminDA";
 import { AdminDocumentos } from "./pages/AdminDocumentos";
@@ -76,6 +77,8 @@ import { ArmadorHusbandry } from "./pages/portal/roles/ArmadorHusbandry";
 import { RoleGuard } from "./components/RoleGuard";
 
 import { SuscripcionPage } from "./pages/portal/SuscripcionPage";
+import { Directorio } from "./pages/Directorio";
+import { VesselDetail } from "./pages/VesselDetail";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
@@ -132,6 +135,8 @@ export default function App() {
             <Route path="noticias" element={<NewsPage />} />
             <Route path="noticias/:articleId" element={<NewsArticlePage />} />
             <Route path="herramientas" element={<ToolsPage />} />
+            <Route path="directorio" element={<Directorio />} />
+            <Route path="directorio/buque/:id" element={<VesselDetail />} />
             <Route path="terminos-y-condiciones" element={<TermsPage />} />
             <Route path="contacto" element={<ContactPage />} />
             <Route path="politica-de-privacidad" element={<PrivacyPage />} />
@@ -154,7 +159,7 @@ export default function App() {
                 </AdminRoleGuard>
              } />
              <Route path="empleados" element={
-                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL", "GERENTE_OPERACIONES"]}>
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL"]}>
                   <AdminEmployees />
                 </AdminRoleGuard>
              } />
@@ -201,6 +206,11 @@ export default function App() {
              <Route path="rendimiento" element={
                 <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "GERENTE_GENERAL", "ANALISTA_BI"]}>
                   <AdminRendimiento />
+                </AdminRoleGuard>
+             } />
+             <Route path="contador" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL", "CONTADOR"]}>
+                  <AdminContador />
                 </AdminRoleGuard>
              } />
              <Route path="nomina" element={

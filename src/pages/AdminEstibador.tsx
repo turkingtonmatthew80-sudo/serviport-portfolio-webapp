@@ -71,11 +71,16 @@ export function AdminEstibador() {
     setIsLoading(true);
     try {
       // 1. Fetch pending/active yard movements
-      const movSnap = await getDocs(query(collection(db, "yard_movements"), orderBy("timestamp", "desc")));
+      let qMovs = query(collection(db, "yard_movements"), orderBy("timestamp", "desc"));
+      // Firestore requires composite index if where + orderBy on different fields. 
+      // If we don't have it, we just fetch and filter client side.
+      const movSnap = await getDocs(qMovs);
       const loadedMovs: YardMovement[] = [];
       movSnap.forEach(d => {
          const data = d.data();
-         // Filter out completed ones, but allow checking of yesterday's status if wanted (or keep non-completed)
+         // Port manual filter to avoid index requirement
+         if (adminUser && adminUser.port !== "GLOBAL" && data.port !== adminUser.port && data.port) return; 
+
          if (data.status !== "COMPLETED") {
            loadedMovs.push({ id: d.id, ...data } as YardMovement);
          }
@@ -83,18 +88,26 @@ export function AdminEstibador() {
       setMovements(loadedMovs);
 
       // 2. Fetch crews
-      const crewSnap = await getDocs(query(collection(db, "crews")));
+      let qCrews: any = collection(db, "crews");
+      if (adminUser && adminUser.port !== "GLOBAL") {
+         qCrews = query(qCrews, where("port", "==", adminUser.port));
+      }
+      const crewSnap = await getDocs(qCrews);
       const loadedCrews: StevedoreCrew[] = [];
       crewSnap.forEach(d => {
-         loadedCrews.push({ id: d.id, ...d.data() } as StevedoreCrew);
+         loadedCrews.push({ id: d.id, ...(d.data() as any) } as StevedoreCrew);
       });
       setCrews(loadedCrews);
 
       // 3. Fetch active vessels to display corresponding vessel layout
-      const vesselSnap = await getDocs(query(collection(db, "portcalls")));
+      let qVessels: any = collection(db, "portcalls");
+      if (adminUser && adminUser.port !== "GLOBAL") {
+         qVessels = query(qVessels, where("port", "==", adminUser.port));
+      }
+      const vesselSnap = await getDocs(qVessels);
       const vessels: any[] = [];
       vesselSnap.forEach(d => {
-         const data = d.data();
+         const data = d.data() as any;
          if (data.status !== "Finalizado") {
            vessels.push({ id: d.id, ...data });
          }
@@ -405,7 +418,7 @@ export function AdminEstibador() {
                    <ClipboardList size={20} className="text-primary" /> Órdenes de Estiba Pendientes
                 </h3>
                 <p className="text-xs text-foreground-muted font-sans mt-0.5">
-                   Trabajando en tiempo de simulación acelerada (TOS Sync).
+                   Trabajando en tiempo real procesando órdenes (TOS Sync).
                  </p>
              </div>
 

@@ -72,7 +72,7 @@ export function FAQSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-background border rounded-sm transition-all duration-300 shrink-0 ${openIndex === index ? "border-primary shadow-md" : "border-border shadow-sm hover:border-border"}`}
+              className={`clay-card shadow-sm transition-all duration-300 shrink-0 overflow-hidden ${openIndex === index ? "border-primary/50" : ""}`}
             >
               <button
                 className="w-full flex items-center justify-between p-4 md:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -126,7 +126,7 @@ export function FAQSection() {
           </p>
           <Link
             to="/contacto"
-            className="group bg-secondary text-white px-6 md:px-8 py-3 rounded font-bold hover:bg-slate-800 transition-colors shadow-lg flex items-center justify-center gap-2 text-center text-xs md:text-sm uppercase tracking-wider w-fit"
+            className="clay-button-primary px-6 md:px-8 py-3 w-fit tracking-wider text-xs md:text-sm uppercase font-bold shadow-lg flex items-center justify-center gap-2"
           >
             IR A LA SECCIÓN DE CONTACTO
           </Link>

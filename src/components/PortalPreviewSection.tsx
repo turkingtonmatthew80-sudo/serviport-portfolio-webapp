@@ -10,7 +10,7 @@ export function PortalPreviewSection() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.8 }}
-        className="max-w-[1400px] w-full mx-auto bg-secondary rounded-2xl overflow-hidden shadow-2xl relative flex flex-col justify-center"
+        className="max-w-[1400px] w-full mx-auto bg-slate-900 border border-white/15 rounded-[2rem] overflow-hidden shadow-[10px_10px_35px_rgba(0,0,0,0.3),inset_4px_4px_12px_rgba(255,255,255,0.06),inset_-4px_-4px_12px_rgba(0,0,0,0.4)] relative flex flex-col justify-center transition-all duration-300 hover:scale-[1.01]"
       >
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
           <Anchor size={400} />
@@ -63,7 +63,7 @@ export function PortalPreviewSection() {
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
               <Link
                 to="/portal"
-                className="group bg-accent text-white px-6 md:px-8 py-3 rounded font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-accent/20 flex items-center justify-center gap-2 text-center text-xs md:text-sm uppercase tracking-wider w-fit"
+                className="clay-button-accent px-6 md:px-8 py-3 uppercase text-xs md:text-sm tracking-wider w-fit flex items-center justify-center gap-2 font-bold"
               >
                 <Lock size={18} />
                 INGRESAR AL PORTAL
@@ -100,7 +100,7 @@ export function PortalPreviewSection() {
 
               <Link
                 to="/portal"
-                className="group border-2 border-accent text-accent hover:text-white hover:bg-accent px-4 md:px-6 py-2 rounded font-bold transition-colors flex items-center justify-center gap-2 text-center text-[10px] md:text-xs uppercase tracking-wider w-fit"
+                className="clay-button-secondary px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs uppercase tracking-wider w-fit font-bold border border-white/5"
               >
                 REGISTRO DE CLIENTE B2B
               </Link>

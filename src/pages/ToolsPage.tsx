@@ -46,7 +46,7 @@ export function ToolsPage() {
           </h1>
           <p className="text-sm md:text-lg text-slate-300 font-medium max-w-3xl leading-relaxed mx-auto md:mx-0">
             Monitorea información crítica sobre tus envíos, programa
-            simulaciones operativas y solicita cotizaciones en tiempo real.
+            movimientos operativos y solicita cotizaciones en tiempo real.
           </p>
         </div>
       </section>

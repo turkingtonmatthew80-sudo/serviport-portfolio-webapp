@@ -64,14 +64,15 @@ const roleNavigation: Record<string, { name: string; path: string; icon: any }[]
     { name: "Control Incidentes HSE", path: "/admin/hse", icon: Shield },
   ],
   CONTADOR: [
-    { name: "Terminal Financiero", path: "/admin/dashboard", icon: DollarSign },
+    { name: "Terminal Financiero", path: "/admin/contador", icon: DollarSign },
     { name: "Nómina Venezolana", path: "/admin/nomina", icon: Users },
   ],
   FACTURADOR: [
     { name: "Disbursement Accounts", path: "/admin/da", icon: DollarSign },
   ],
   ANALISTA_BI: [
-    { name: "Dashboards BI", path: "/admin/dashboard", icon: TrendingUp },
+    { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Dashboards BI / Rendimiento", path: "/admin/rendimiento", icon: TrendingUp },
   ],
 };
 

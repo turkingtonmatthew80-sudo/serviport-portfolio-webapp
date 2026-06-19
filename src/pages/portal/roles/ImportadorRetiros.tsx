@@ -17,7 +17,7 @@ export function ImportadorRetiros() {
   const fetchRetiros = async () => {
     if (!user) return;
     try {
-      const snap = await getDocs(query(collection(db, "retiro_requests"), where("importadorId", "==", user.uid)));
+      const snap = await getDocs(query(collection(db, "retiro_requests"), where("importadorId", "==", user.id)));
       setRetiros(snap.docs.map(d => ({id: d.id, ...d.data()})));
     } catch(e) {}
   };
@@ -28,7 +28,7 @@ export function ImportadorRetiros() {
       await addDoc(collection(db, "retiro_requests"), {
         ...formData,
         status: "Programado",
-        importadorId: user?.uid,
+        importadorId: user?.id,
         createdAt: new Date().toISOString()
       });
       setShowModal(false);

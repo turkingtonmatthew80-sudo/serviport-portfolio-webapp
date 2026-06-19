@@ -45,7 +45,7 @@ export function NavieraDashboard() {
       await addDoc(collection(db, "portcalls"), {
         ...formData,
         status: "Programado",
-        navieraId: user?.uid,
+        navieraId: user?.id,
         createdAt: new Date().toISOString()
       });
       setShowModal(false);

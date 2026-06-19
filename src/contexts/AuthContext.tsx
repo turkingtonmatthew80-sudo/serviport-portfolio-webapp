@@ -19,6 +19,7 @@ import {
   query,
   where,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { auth, db, handleFirestoreError, OperationType } from "../lib/firebase";
 
@@ -297,7 +298,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!firebaseUser) throw new Error("No user session found.");
 
     try {
-      await deleteDoc(doc(db, "users", firebaseUser.uid));
+      await updateDoc(doc(db, "users", firebaseUser.uid), {
+         is_archived: true,
+         archived_at: new Date().toISOString(),
+         archived_by: firebaseUser.email || "Self"
+      });
       await firebaseUser.delete();
       setUser(null);
       return true;

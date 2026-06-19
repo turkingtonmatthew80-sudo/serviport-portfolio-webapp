@@ -99,6 +99,17 @@ export const megaMenuData = {
       { label: "Casos de Éxito", path: "/noticias#casos" },
     ],
   },
+  directorio: {
+    title: "Directorio Marítimo",
+    path: "/directorio",
+    image:
+      "https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80",
+    description:
+      "Catálogo global de infraestructura, navieras, aduanas y buques vinculados al transporte logístico.",
+    links: [
+      { label: "Catálogo Completo", path: "/directorio" },
+    ],
+  },
   contacto: {
     title: "Contacto",
     path: "/contacto",
@@ -173,6 +184,10 @@ export function Navigation() {
     },
     noticias: {
       theme: "bg-[#0284c7] hover:bg-[#0274af]",
+      textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
+    },
+    directorio: {
+      theme: "bg-[#1e293b] hover:bg-[#1a2332] dark:bg-[#0f172a] dark:hover:bg-[#1e293b]",
       textColor: "text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]"
     },
     contacto: {
@@ -254,7 +269,7 @@ export function Navigation() {
           {/* Portal Button (Original Pill Style) */}
           <button
             onClick={() => navigate("/login")}
-            className="bg-[#f7941d] hover:bg-[#e38312] text-white px-2.5 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded font-black hover:-translate-y-[1px] active:translate-y-0 transition-all shadow-sm text-[10px] sm:text-xs md:text-sm whitespace-nowrap uppercase tracking-wider shrink-0"
+            className="clay-button-accent px-2.5 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2 rounded-xl text-[10px] sm:text-xs md:text-sm whitespace-nowrap uppercase tracking-wider shrink-0"
           >
             Portal
           </button>

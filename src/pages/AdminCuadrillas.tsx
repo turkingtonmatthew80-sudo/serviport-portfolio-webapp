@@ -68,7 +68,10 @@ export function AdminCuadrillas() {
       const snap = await getDocs(qCrews);
       const list: Crew[] = [];
       snap.forEach((doc) => {
-        list.push({ id: doc.id, ...(doc.data() as any) } as Crew);
+        const data = doc.data() as any;
+        if (!data.is_archived) {
+          list.push({ id: doc.id, ...data } as Crew);
+        }
       });
       setCrews(list);
     } catch (e) {
@@ -142,10 +145,14 @@ export function AdminCuadrillas() {
   };
 
   const handleDelete = async (id: string, crewName: string) => {
-    if (!confirm(`¿Está seguro de querer eliminar permanentemente la cuadrilla "${crewName}"?`)) return;
+    if (!confirm(`¿Está seguro de querer archivar la cuadrilla "${crewName}"?`)) return;
     try {
-      await deleteDoc(doc(db, "crews", id));
-      await logAuditAction(`Eliminó cuadrilla de estiba: ${crewName}`, adminUser?.role, adminUser?.email);
+      await updateDoc(doc(db, "crews", id), {
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+        archived_by: adminUser?.email || "SuperAdmin"
+      });
+      await logAuditAction("GENERAL_CYCLE", `Archivó cuadrilla de estiba: ${crewName}`, adminUser?.email, adminUser?.role, "WARNING");
       loadData();
     } catch (error) {
       console.error(error);

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Truck, MapPin, Search, CalendarClock, ShieldCheck, User, Package, Filter, CheckCircle2, Factory, Clock } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { db } from "../lib/firebase";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
 
 interface TransportOrder {
   id: string;
@@ -10,7 +10,7 @@ interface TransportOrder {
   driverName: string;
   plate: string;
   containerId: string;
-  status: "ASIGNADO" | "EN_CAMINO" | "EN_PUERTO" | "RECOGIDO" | "ENTREGADO";
+  status: string;
   appointmentTime: string;
   origin: string;
   destination: string;
@@ -23,19 +23,32 @@ export function AdminTrafico() {
   const [filterStatus, setFilterStatus] = useState("ALL");
 
   useEffect(() => {
-    // Generate some mock orders representing traffic for this port
-    const mockOrders: TransportOrder[] = [
-      { id: "TRF-819", contractor: "Transportes Lider C.A.", driverName: "Luis Perez", plate: "A12BC3D", containerId: "MRKU1234567", status: "EN_CAMINO", appointmentTime: "14:00", origin: "Caracas", destination: "Puerto Cabello" },
-      { id: "TRF-820", contractor: "Carga Pesada Vzla", driverName: "Mario Ruiz", plate: "X98YZ7F", containerId: "MSCU8882910", status: "EN_PUERTO", appointmentTime: "10:30", origin: "Valencia", destination: "Puerto Cabello" },
-      { id: "TRF-821", contractor: "Logistica SUR", driverName: "Ana Gomez", plate: "C44DF1H", containerId: "ZIMU7738210", status: "ASIGNADO", appointmentTime: "16:00", origin: "Barquisimeto", destination: "Puerto Cabello" },
-      { id: "TRF-822", contractor: "Transportes Lider C.A.", driverName: "Carlos Toro", plate: "B55TR9W", containerId: "EVER1155998", status: "RECOGIDO", appointmentTime: "09:00", origin: "Puerto Cabello", destination: "Maracay" },
-      { id: "TRF-823", contractor: "Carga Pesada Vzla", driverName: "Hector Bello", plate: "H22JK4L", containerId: "HLCU4455221", status: "ENTREGADO", appointmentTime: "08:00", origin: "Puerto Cabello", destination: "Valencia" }
-    ];
-    setOrders(mockOrders);
+    // Listen to eir_orders which represent transport appointments and orders created by B2B portal.
+    const unsub = onSnapshot(collection(db, "eir_orders"), (snap) => {
+       const data: TransportOrder[] = [];
+       snap.forEach(doc => {
+          const d = doc.data() as any;
+          // map fields correctly based on what Transportista portal creates.
+          data.push({
+             id: doc.id,
+             contractor: "Transportista B2B",
+             driverName: d.driverName || "Chofer",
+             plate: d.plate || "XXX-000",
+             containerId: d.containerId || "N/A",
+             status: d.status || "Programado",
+             appointmentTime: d.createdAt ? new Date(d.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "N/A",
+             origin: d.origin || "Puerto Cabello",
+             destination: d.destination || "Destino Cliente"
+          });
+       });
+       setOrders(data);
+    });
+
+    return () => unsub();
   }, []);
 
   const filteredOrders = orders.filter(o => {
-    if (filterStatus !== "ALL" && o.status !== filterStatus) return false;
+    if (filterStatus !== "ALL" && o.status.toUpperCase() !== filterStatus.toUpperCase()) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return o.plate.toLowerCase().includes(term) || o.containerId.toLowerCase().includes(term) || o.contractor.toLowerCase().includes(term);

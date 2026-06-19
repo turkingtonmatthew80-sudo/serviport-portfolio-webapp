@@ -28,7 +28,7 @@ export function ArmadorHusbandry() {
       await addDoc(collection(db, "husbandry_requests"), {
         ...formData,
         status: "Pendiente",
-        armadorId: user?.uid,
+        armadorId: user?.id,
         createdAt: new Date().toISOString()
       });
       setShowModal(false);

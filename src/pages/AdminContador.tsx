@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Cell
 } from "recharts";
+import { generateFacturaFiscalPDF } from "../lib/pdfGenerator";
 
 // Interfaces mirroring actual model schema
 interface PortCall {
@@ -39,6 +40,7 @@ interface DBContainer {
   weight?: number;
   lineOperator?: string;
   fechaIngreso?: string; // Entry date for AGD calculation
+  createdAt?: string;
 }
 
 interface Tariff {
@@ -307,8 +309,9 @@ export function AdminContador() {
     setCustomClientName(pc.lineOperator || "NAVIERA POOL VENEZUELA");
     setCustomClientRIF(pc.clientRIF || "J-40292851-4");
 
-    // Standard pre-calculation algorithm mapping scale specifications to tariff catalog
-    const scaleStayDays = 3; // Standard simulated vessel stay
+    const arrivalDate = pc.eta ? new Date(pc.eta).getTime() : new Date().getTime();
+    const departureDate = pc.etd ? new Date(pc.etd).getTime() : new Date().getTime();
+    const calculatedStayDays = Math.max(1, Math.ceil((departureDate - arrivalDate) / (1000 * 3600 * 24)));
     const containerCount = pc.cargoQty || 12; // Cargo count (default or scale amount)
 
     const baseAgenciamiento = tariffs.find(t=>t.id === "TF-01")?.price || 1550;
@@ -440,8 +443,8 @@ export function AdminContador() {
     }
   };
 
-  // CLIENT BYPASS MOVEMENT: SIMULATE THE CLIENT ACTION APPROVING PORTAL PROFORMA
-  const handleSimulateClientApprovalCode = async (profId: string) => {
+  // MANUAL OVERRIDE: Admin intentionally marks Proforma as approved if client offline.
+  const handleManualClientApprovalOverride = async (profId: string) => {
     setIsActionsProcessing(`client-approve-${profId}`);
     try {
       // 1. Update the B2B notifications approvals node if exists
@@ -458,12 +461,12 @@ export function AdminContador() {
       });
 
       await logAuditAction(
-        `[SIMULADO] El cliente B2B autorizó digitalmente la Proforma Invoice (${profId}) para pago inmediato.`,
+        `Aprobación Administrativa Manual (Override). Proforma (${profId}) marcada como aprobada.`,
         "CONTADOR",
         adminUser?.email
       );
 
-      setOpSuccessMessage(`¡Simulación exitosa! El cliente firmó la proforma. Proceda a emitir la Factura Fiscal.`);
+      setOpSuccessMessage(`Proforma aprobada administrativamente. Proceda a emitir la Factura Fiscal.`);
       setTimeout(() => setOpSuccessMessage(null), 5000);
       loadAccountingWorkspace();
     } catch (e) {
@@ -799,11 +802,11 @@ export function AdminContador() {
                               {!isClientApproved && (
                                 <button
                                   disabled={isActionsProcessing !== null}
-                                  onClick={() => handleSimulateClientApprovalCode(inv.id)}
+                                  onClick={() => handleManualClientApprovalOverride(inv.id)}
                                   className="px-1.5 py-0.5 bg-secondary text-white rounded font-mono text-[8px] font-bold uppercase hover:bg-slate-800"
-                                  title="Firma digitalmente en nombre de la línea naviera"
+                                  title="Aprobación Administrativa (Override)"
                                 >
-                                  Firma B2B
+                                  Override
                                 </button>
                               )}
                               <button
@@ -983,11 +986,10 @@ export function AdminContador() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {containersInAgd.map((c, idx) => {
-                        // Estimate simulated days in AGD deterministically
-                        const baseIdx = idx + 1;
-                        const simulatedDays = (baseIdx * 3) % 15 || 5; 
+                        // Real day calculation from container creation date in the port
+                        const calculatedDays = c.createdAt ? Math.ceil((new Date().getTime() - new Date(c.createdAt).getTime()) / (1000 * 3600 * 24)) || 1 : 1;
                         const dailyCharge = 45.00;
-                        const netAcumulado = simulatedDays * dailyCharge;
+                        const netAcumulado = calculatedDays * dailyCharge;
 
                         return (
                           <tr key={c.id} className="hover:bg-slate-50/50">
@@ -995,7 +997,7 @@ export function AdminContador() {
                             <td className="py-3.5 px-6 font-mono text-slate-500">{c.type}</td>
                             <td className="py-3.5 px-6 font-semibold text-slate-600">{c.lineOperator || "EVERGREEN"}</td>
                             <td className="py-3.5 px-6 font-mono text-[11px] text-slate-500">{c.location || "Patio AGD F-2"}</td>
-                            <td className="py-3.5 px-6 font-mono font-bold text-slate-700">{simulatedDays} días</td>
+                            <td className="py-3.5 px-6 font-mono font-bold text-slate-700">{calculatedDays} días</td>
                             <td className="py-3.5 px-6 font-mono text-right font-medium">${dailyCharge.toFixed(2)}</td>
                             <td className="py-3.5 px-6 font-mono text-right font-black text-secondary">${netAcumulado.toFixed(2)}</td>
                             <td className="py-3.5 px-6 text-right">
@@ -1017,7 +1019,7 @@ export function AdminContador() {
                                       issueDate: today,
                                       exchangeRate: exchangeRate,
                                       items: [
-                                        { concept: `Servicio Almacenaje Resguardado AGD Contenedor ${c.containerId}`, qty: simulatedDays, unitPrice: dailyCharge, total: netAcumulado }
+                                        { concept: `Servicio Almacenaje Resguardado AGD Contenedor ${c.containerId}`, qty: calculatedDays, unitPrice: dailyCharge, total: netAcumulado }
                                       ],
                                       subtotalUSD: netAcumulado,
                                       subtotalVES: netAcumulado * exchangeRate,
@@ -1032,7 +1034,7 @@ export function AdminContador() {
                                     await setDoc(doc(db, "invoices", invoiceItem.id), invoiceItem);
                                     
                                     await logAuditAction(
-                                      `EMISIÓN ALMACENAJE: Generó factura fiscal directa ${newControl} por estadía de ${simulatedDays} días del contenedor ${c.containerId}`,
+                                      `EMISIÓN ALMACENAJE: Generó factura fiscal directa ${newControl} por estadía de ${calculatedDays} días del contenedor ${c.containerId}`,
                                       "CONTADOR",
                                       adminUser?.email
                                     );
@@ -1388,7 +1390,7 @@ export function AdminContador() {
               </button>
               <button 
                 onClick={() => {
-                  window.print();
+                  generateFacturaFiscalPDF(activeReceiptDoc);
                 }}
                 className="px-4 py-2 bg-primary text-white font-mono text-xs font-black uppercase rounded shadow flex items-center gap-1"
               >
