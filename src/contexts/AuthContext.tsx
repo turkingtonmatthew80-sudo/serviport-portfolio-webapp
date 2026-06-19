@@ -280,8 +280,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
 
-    await signOut(auth);
-    setUser(null);
+    setUser({
+      id: firebaseUser.uid,
+      razonSocial: newUser.razonSocial,
+      email: newUser.email,
+      rif: newUser.rif,
+      roles: newUser.roles,
+    });
     return true;
   };
 

@@ -325,6 +325,8 @@ export function B2BRegisterPage() {
             rif: fullRif,
             roles: selectedServices as RoleId[],
           });
+          navigate("/portal");
+          return;
         } else {
           await register(
             {
@@ -386,30 +388,19 @@ export function B2BRegisterPage() {
             ¡Registro Exitoso!
           </h2>
 
-          {isGoogleAutofilled ? (
-            <p className="text-foreground-muted mb-8 leading-relaxed">
-              Tu cuenta corporativa ha sido creada y validada exitosamente
-              mediante tu cuenta de Google.
-              <br />
-              <br />
-              Ya puedes iniciar sesión en el portal utilizando la opción de{" "}
-              <strong>Continuar con Google</strong>.
-            </p>
-          ) : (
-            <p className="text-foreground-muted mb-8 leading-relaxed">
-              Hemos enviado un correo electrónico a{" "}
-              <span className="font-semibold text-gray-800">
-                {emailUser}@{emailDomain}
-              </span>
-              .
-              <br />
-              <br />
-              Por favor, revisa tu bandeja de entrada (o carpeta de spam) y haz
-              clic en el enlace adjunto para{" "}
-              <strong>verificar tu cuenta corporativa</strong> antes de iniciar
-              sesión.
-            </p>
-          )}
+          <p className="text-foreground-muted mb-8 leading-relaxed">
+            Hemos enviado un correo electrónico a{" "}
+            <span className="font-semibold text-gray-800">
+              {emailUser}@{emailDomain}
+            </span>
+            .
+            <br />
+            <br />
+            Por favor, revisa tu bandeja de entrada (o carpeta de spam) y haz
+            clic en el enlace adjunto para{" "}
+            <strong>verificar tu cuenta corporativa</strong> antes de iniciar
+            sesión.
+          </p>
 
           <Link
             to="/login"
