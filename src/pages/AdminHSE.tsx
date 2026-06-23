@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shield, AlertTriangle, CheckCircle, Clock, Printer, Plus } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { generateHSEIncidentPDF } from "../lib/pdfGenerator";
 import { logAuditAction } from "../lib/audit";

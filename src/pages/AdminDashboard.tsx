@@ -4,7 +4,8 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { Navigate } from "react-router-dom";
+import { collection, getDocs, doc, getDoc } from "../lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { AdminContador } from "./AdminContador";
 import {
@@ -19,6 +20,8 @@ import {
   EstibadorDashboard,
   AnalistaBIDashboard
 } from "./AdminRoleDashboards";
+import { SuperadminDashboard as NewSuperadminDashboard } from "./portal/roles/SuperadminDashboard";
+import { GerenteDashboard } from "./portal/roles/GerenteDashboard";
 
 export function AdminDashboard() {
   const { adminUser } = useAdminAuth();
@@ -27,30 +30,34 @@ export function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-black text-secondary uppercase tracking-tight font-sansita">
-            Dashboard {adminUser.role === "GERENTE_GENERAL" ? "Global" : "Operativo"}
-          </h2>
-          <p className="text-foreground-muted text-sm font-sans mt-1">
-            Resumen en tiempo real del estado del sistema
-          </p>
-        </div>
-      </div>
-
-      {adminUser.role === "GERENTE_GENERAL" && <SuperAdminDashboard />}
-      {adminUser.role === "GERENTE_OPERACIONES" && <GerenteDashboard />}
-      {adminUser.role === "CONTADOR" && <AdminContador />}
-      {adminUser.role === "DESPACHADOR_BUQUES" && <DespachadorBuquesDashboard />}
-      {adminUser.role === "OFICIAL_BUQUES" && <OficialBuquesDashboard />}
-      {adminUser.role === "INSPECTOR_PUERTA" && <InspectorPuertaDashboard />}
-      {adminUser.role === "PLANIFICADOR_PATIO" && <PlanificadorPatioDashboard />}
-      {adminUser.role === "COORDINADOR_TRAFICO" && <CoordinadorTraficoDashboard />}
-      {adminUser.role === "AGENTE_DOCUMENTACION" && <AgenteDocumentacionDashboard />}
-      {adminUser.role === "FACTURADOR" && <FacturadorDashboard />}
-      {adminUser.role === "SUPERVISOR_HSE" && <SupervisorHSEDashboard />}
-      {adminUser.role === "ESTIBADOR" && <EstibadorDashboard />}
-      {adminUser.role === "ANALISTA_BI" && <AnalistaBIDashboard />}
+      {adminUser.role === "GERENTE_GENERAL" ? (
+        <NewSuperadminDashboard />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-black text-secondary uppercase tracking-tight font-sansita">
+                Dashboard Operativo
+              </h2>
+              <p className="text-foreground-muted text-sm font-sans mt-1">
+                Resumen en tiempo real del estado del sistema
+              </p>
+            </div>
+          </div>
+          {adminUser.role === "GERENTE_OPERACIONES" && <GerenteDashboard />}
+          {adminUser.role === "CONTADOR" && <Navigate to="/admin/contador" replace />}
+          {adminUser.role === "DESPACHADOR_BUQUES" && <Navigate to="/admin/buques" replace />}
+          {adminUser.role === "OFICIAL_BUQUES" && <Navigate to="/admin/oficial-sof" replace />}
+          {adminUser.role === "INSPECTOR_PUERTA" && <Navigate to="/admin/gate" replace />}
+          {adminUser.role === "PLANIFICADOR_PATIO" && <Navigate to="/admin/yard-planner" replace />}
+          {adminUser.role === "COORDINADOR_TRAFICO" && <CoordinadorTraficoDashboard />}
+          {adminUser.role === "AGENTE_DOCUMENTACION" && <Navigate to="/admin/documentos" replace />}
+          {adminUser.role === "FACTURADOR" && <Navigate to="/admin/da" replace />}
+          {adminUser.role === "SUPERVISOR_HSE" && <Navigate to="/admin/hse" replace />}
+          {adminUser.role === "ESTIBADOR" && <EstibadorDashboard />}
+          {adminUser.role === "ANALISTA_BI" && <AnalistaBIDashboard />}
+        </>
+      )}
       
     </div>
   );
@@ -166,210 +173,3 @@ function SuperAdminDashboard() {
   );
 }
 
-function GerenteDashboard() {
-  const { adminUser } = useAdminAuth();
-  const [stats, setStats] = useState({ buques: 0, approvals: 0, yardCurrent: 0, yardCapacity: 0, movementsCount: 0 });
-  const [portcalls, setPortcalls] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-     const loadStats = async () => {
-         try {
-             const { query, where } = await import("firebase/firestore");
-             const currentPort = adminUser?.port;
-             const isGlobal = currentPort === "GLOBAL";
-
-             // 1. Fetch real portcalls
-             let qB = collection(db, "portcalls");
-             if (!isGlobal) {
-                 qB = query(collection(db, "portcalls"), where("port", "==", currentPort)) as any;
-             }
-             const bSnap = await getDocs(qB);
-             const pcList: any[] = [];
-             bSnap.forEach(doc => {
-                 pcList.push({ id: doc.id, ...(doc.data() as any) });
-             });
-             setPortcalls(pcList);
-
-             // 2. Fetch pending approvals (approvals + portcalls in Programado state)
-             // Approvals: B2B requests
-             let qA = collection(db, "approvals");
-             if (!isGlobal) {
-                 qA = query(collection(db, "approvals"), where("port", "==", currentPort)) as any;
-             }
-             const aSnap = await getDocs(qA);
-             const pendingApprovalsCount = aSnap.docs.filter(d => d.data().status === "pending").length;
-             const pendingPortcallsCount = pcList.filter(pc => pc.status === "Programado").length;
-
-             // 3. Fetch patios for capacity percentage
-             let qPat = collection(db, "patios");
-             if (!isGlobal) {
-                 qPat = query(collection(db, "patios"), where("port", "==", currentPort)) as any;
-             }
-             const patSnap = await getDocs(qPat);
-             let totalCurrent = 0;
-             let totalCapacity = 0;
-             patSnap.forEach(doc => {
-                 const data = doc.data();
-                 totalCurrent += data.current || 0;
-                 totalCapacity += data.capacity || 2000;
-              });
-
-             // 4. Fetch movements
-             let qMov = collection(db, "yard_movements");
-             if (!isGlobal) {
-                 qMov = query(collection(db, "yard_movements"), where("port", "==", currentPort)) as any;
-             }
-             const movSnap = await getDocs(qMov);
-
-             setStats({
-                 buques: pcList.length,
-                 approvals: pendingApprovalsCount + pendingPortcallsCount,
-                 yardCurrent: totalCurrent || 3120,
-                 yardCapacity: totalCapacity || 7500,
-                 movementsCount: movSnap.size
-             });
-
-             // 5. Generate high-quality notification alerts dynamically from active data state
-             const generatedAlerts: any[] = [];
-             
-             // Dynamic alert for pending approvals
-             if (pendingPortcallsCount > 0) {
-                 generatedAlerts.push({
-                     id: "alert-pc",
-                     title: "Aprobación Requerida",
-                     desc: `${pendingPortcallsCount} escalas de buques pendientes por autorizar`,
-                     type: "alert",
-                     time: "Hace 5m"
-                 });
-             }
-             if (pendingApprovalsCount > 0) {
-                 generatedAlerts.push({
-                     id: "alert-ap",
-                     title: "Documentos B2B",
-                     desc: `Hay ${pendingApprovalsCount} solicitudes de clientes esperando firma digital`,
-                     type: "alert",
-                     time: "Hace 15m"
-                 });
-             }
-
-             // Fetch gate events for notifications
-             let qGate = collection(db, "gate_events");
-             if (!isGlobal) {
-                 qGate = query(collection(db, "gate_events"), where("port", "==", currentPort)) as any;
-             }
-             const gateSnap = await getDocs(qGate);
-             if (!gateSnap.empty) {
-                 const latestGate = gateSnap.docs[0].data();
-                 generatedAlerts.push({
-                     id: "alert-gate",
-                     title: `Acceso Portería (Gate-${latestGate.type || 'IN'})`,
-                     desc: `Camión placa ${latestGate.truckPlate || latestGate.placa || "N/D"} procesado para contenedor ${latestGate.containerRef || latestGate.container || "VACÍO"}`,
-                     type: "info",
-                     time: "Reciente"
-                 });
-             }
-
-             // Fallbacks if empty
-             if (generatedAlerts.length === 0) {
-                 generatedAlerts.push({
-                     id: "fallback-1",
-                     title: "Sistema Sincronizado",
-                     desc: "Todos los frentes de estiba y patios operan en régimen normal.",
-                     type: "success",
-                     time: "Ahora"
-                 });
-             }
-
-             setNotifications(generatedAlerts);
-
-         } catch(e) {
-             console.error("Error loading Gerente dashboard stats:", e);
-         } finally {
-             setIsLoading(false);
-         }
-     };
-     loadStats();
-  }, []);
-
-  const yardPct = Math.round((stats.yardCurrent / stats.yardCapacity) * 100) || 41;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Buques en Muelle", value: stats.buques, icon: Ship, color: "text-blue-500", bg: "bg-blue-50" },
-          { label: "Ocupación Patios", value: `${yardPct}%`, icon: Box, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Autorizaciones Pendientes", value: stats.approvals, icon: AlertTriangle, color: "text-orange-500", bg: "bg-orange-50" },
-          { label: "Traslados de Patio (Total)", value: stats.movementsCount, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-50" },
-        ].map((stat, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="clay-card p-6 flex items-center justify-between relative">
-            <div>
-              <p className="text-xs font-bold text-foreground-muted uppercase tracking-wider mb-1">{stat.label}</p>
-              <h4 className="text-2xl font-black text-secondary">
-                 {isLoading ? <Loader2 size={18} className="animate-spin text-primary" /> : stat.value}
-              </h4>
-            </div>
-            <div className={`p-4 rounded-full ${stat.bg} ${stat.color} shrink-0`}>
-              <stat.icon size={24} />
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="clay-card p-6 flex flex-col h-[400px] relative">
-           <h3 className="text-lg font-bold text-secondary font-sansita uppercase tracking-tight mb-4">Notificaciones del Sistema</h3>
-           <div className="flex-1 overflow-y-auto space-y-3 pr-2 no-scrollbar">
-              {isLoading ? (
-                  <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>
-              ) : notifications.length > 0 ? (
-                  notifications.map((n) => (
-                      <div key={n.id} className="p-3 bg-slate-50 border border-border rounded flex justify-between items-start text-xs font-mono">
-                          <div className="space-y-0.5">
-                              <p className={`font-bold ${n.type === 'alert' ? 'text-orange-655 text-orange-700' : 'text-secondary font-sans font-bold'}`}>{n.title}</p>
-                              <p className="text-slate-500 font-sans">{n.desc}</p>
-                          </div>
-                          <span className="text-[10px] text-foreground-muted shrink-0">{n.time}</span>
-                      </div>
-                  ))
-              ) : (
-                  <p className="text-center text-sm font-mono text-foreground-muted mt-8">Sin notificaciones relevantes en el turno actual.</p>
-              )}
-           </div>
-        </div>
-
-        <div className="clay-card p-6 flex flex-col h-[400px] relative">
-           <div className="flex justify-between items-center mb-4 select-none">
-             <h3 className="text-lg font-bold text-secondary font-sansita uppercase tracking-tight">Buques en Muelle (Ahora)</h3>
-             <span className="text-[10px] font-mono font-bold text-primary uppercase border border-primary/20 px-1.5 py-0.5 rounded">TOS Activo</span>
-           </div>
-           <div className="flex-1 overflow-y-auto space-y-3 pr-2 no-scrollbar">
-              {isLoading ? (
-                  <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>
-              ) : portcalls.length > 0 ? (
-                  portcalls.map((pc) => (
-                      <div key={pc.id} className="p-3 border border-border rounded flex justify-between items-center text-xs">
-                          <div>
-                              <p className="font-bold text-secondary text-sm">{pc.name}</p>
-                              <p className="text-foreground-muted font-mono text-[10px]">Puesto: <span className="font-bold text-primary">{pc.berth}</span> • ETA: {pc.eta}</p>
-                          </div>
-                          <span className={`font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
-                              pc.status === 'En Operación' || pc.status === 'Atracado'
-                                ? 'bg-primary/10 text-primary border-primary/20'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                          }`}>
-                              {pc.status}
-                          </span>
-                      </div>
-                  ))
-              ) : (
-                  <p className="text-center text-sm font-mono text-foreground-muted mt-8">Sin registros operativos de escalas de buques en muelle.</p>
-              )}
-           </div>
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { 
   collection, getDocs, addDoc, setDoc, doc, updateDoc, query, where, orderBy, getDoc, serverTimestamp
-} from "firebase/firestore";
+} from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "@/src/lib/db-wrapper";
 import {
   Users,
   Plus,

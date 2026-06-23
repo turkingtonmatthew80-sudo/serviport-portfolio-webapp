@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, Scale, Send, ShieldCheck, Anchor, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { collection, addDoc, doc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, doc, onSnapshot } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 
 export function LegalDocsPage() {

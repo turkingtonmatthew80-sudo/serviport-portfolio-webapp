@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs } from "@/src/lib/db-wrapper";
 
 export type Role =
   | "GERENTE_GENERAL" // Superadmin

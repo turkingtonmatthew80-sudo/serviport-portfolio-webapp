@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FileText, CheckCircle, FileOutput } from "lucide-react";
 import { db } from "../../../lib/firebase";
-import { collection, query, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, getDocs, updateDoc, doc } from "@/src/lib/db-wrapper";
 
 export function NavieraProformas() {
   const [das, setDas] = useState<any[]>([]);

@@ -2,7 +2,7 @@ import { Activity, Anchor, FileText, TrendingUp, Ship, Plus, X } from "lucide-re
 import { cn } from "../../../lib/utils";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, addDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc } from "@/src/lib/db-wrapper";
 import { db } from "../../../lib/firebase";
 
 export function NavieraDashboard() {
@@ -147,28 +147,42 @@ export function NavieraDashboard() {
               </p>
             ) : (
               portCalls.slice(0, 5).map((call, i) => (
-                <div key={i} className="flex items-center justify-between">
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border bg-slate-50/50 hover:bg-slate-50 transition-all gap-4">
                   <div>
                     <p className="font-bold text-foreground">
                       {call.name || call.vesselName || "Buque Desconocido"}
                     </p>
-                    <p className="text-xs text-foreground-muted">
+                    <p className="text-xs text-foreground-muted mt-0.5">
                       Viaje: {call.voyageNumber || call.voyage || "--"} |{" "}
                       {call.location || call.port || "En Rada"}
                     </p>
                   </div>
-                  <span
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-bold",
-                      call.status === "En Operación"
-                        ? "bg-primary/10 text-primary"
-                        : call.status === "Programado"
-                          ? "bg-accent/10 text-accent"
-                          : "bg-gray-100 text-foreground-muted",
-                    )}
-                  >
-                    {call.status || "Pendiente"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={call.status || "Programado"}
+                      onChange={async (e) => {
+                        const newStatus = e.target.value;
+                        try {
+                          await fetch("/api/portcalls/update-status", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              portCallId: call.id,
+                              newStatus,
+                              vesselName: call.name || call.vesselName
+                            })
+                          });
+                        } catch(err) {
+                          console.error("Error updating status:", err);
+                        }
+                      }}
+                      className="text-xs border rounded p-1 font-mono font-bold uppercase bg-white text-secondary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer"
+                    >
+                      <option value="Programado">Programado</option>
+                      <option value="En Operación">En Operación</option>
+                      <option value="Completado">Completado</option>
+                    </select>
+                  </div>
                 </div>
               ))
             )}

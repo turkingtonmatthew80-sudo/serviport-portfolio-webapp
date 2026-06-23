@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Users, Plus, Trash2, Edit2, Shield, Loader2, RefreshCcw, X, ToggleLeft, ToggleRight, Ship, CalendarClock, Briefcase, FileText } from "lucide-react";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";

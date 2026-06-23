@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { db } from "../lib/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc } from "@/src/lib/db-wrapper";
 
 export function ContactPage() {
   const [formData, setFormData] = useState({

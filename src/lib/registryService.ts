@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, getDoc, setDoc, writeBatch, serverTimestamp, runTransaction } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc, writeBatch, serverTimestamp, runTransaction } from "@/src/lib/db-wrapper";
 import { db } from "./firebase";
 
 export interface ShippingLine {
@@ -84,7 +84,7 @@ export class RegistryService {
         });
 
         if (lineDoc.exists()) {
-          const newFleetSize = (lineDoc.data().fleetSize || 0) + 1;
+          const newFleetSize = ((lineDoc.data() as any).fleetSize || 0) + 1;
           transaction.update(lineRef, {
             fleetSize: newFleetSize,
             updatedAt: serverTimestamp()

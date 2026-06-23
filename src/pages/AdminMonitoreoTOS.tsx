@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Ship, Activity, Box, Map, Layers, RefreshCcw, Loader2, Gauge, Truck, ArrowRight, CornerDownRight, CheckCircle } from "lucide-react";
-import { collection, getDocs, orderBy, limit, query } from "firebase/firestore";
+import { collection, getDocs, orderBy, limit, query } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { PortCanvas } from "../components/PortCanvas";
 import { useAdminAuth } from "../contexts/AdminAuthContext";

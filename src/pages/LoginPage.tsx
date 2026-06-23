@@ -395,16 +395,94 @@ export function LoginPage() {
                   </form>
                 </div>
 
-                <div className="mt-8 text-center">
-                  <p className="text-sm text-foreground-muted mb-3">
-                    ¿Aún no tienes cuenta comercial B2B?
-                  </p>
-                  <Link
-                    to="/registro-b2b"
-                    className="inline-block text-sm font-bold text-accent hover:text-orange-500 hover:underline transition-all"
-                  >
-                    SOLICITAR REGISTRO DE CLIENTE
-                  </Link>
+                <div className="mt-8 text-center space-y-6">
+                  <div>
+                    <p className="text-sm text-foreground-muted mb-2">
+                      ¿Aún no tienes cuenta comercial B2B?
+                    </p>
+                    <Link
+                      to="/registro-b2b"
+                      className="inline-block text-sm font-bold text-accent hover:text-orange-500 hover:underline transition-all"
+                    >
+                      SOLICITAR REGISTRO DE CLIENTE
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-dashed border-border pt-6 mt-6">
+                    <div className="bg-slate-900 text-white rounded-2xl p-6 text-left border border-slate-800 shadow-xl relative overflow-hidden group">
+                      <div className="absolute right-[-20px] bottom-[-20px] text-white/5 opacity-10 group-hover:rotate-12 transition-transform duration-500">
+                        <Anchor size={120} />
+                      </div>
+                      
+                      <div className="relative z-10">
+                        <span className="bg-primary/20 text-primary text-[10px] uppercase font-black tracking-widest px-2 py-1 rounded-md border border-primary/20">
+                          MVP Sandbox Workspace
+                        </span>
+                        <h4 className="text-lg font-black text-white mt-3 font-sansita uppercase tracking-tight">
+                          Túnel de Demostración Rápida
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                          Haga clic abajo para inicializar el simulador de flujo completo y activar todas las funciones comerciales o administrativas en un solo clic.
+                        </p>
+
+                        <div className="mt-5 space-y-3">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setIsLoading(true);
+                              try {
+                                // 1. Seed Firestore structure
+                                const seedFb = await fetch("/api/seed", { method: 'POST' });
+                                // 2. Seed SQL/Drizzle containers & customs
+                                const seedSql = await fetch("/api/aduanas/seed-demo", {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ rif: "J-12345678-9", razonSocial: "SERVIPORT MULTI-B2B CO" })
+                                });
+                                // 3. Login client-side
+                                const { loginAsDemo } = await import("../contexts/AuthContext").then(m => m.useAuth());
+                                loginAsDemo();
+                                navigate("/portal");
+                              } catch(e) {
+                                console.error("Error setting up demo sandbox data", e);
+                                // Fallback login if endpoints timeout
+                                const { loginAsDemo } = await import("../contexts/AuthContext").then(m => m.useAuth());
+                                loginAsDemo();
+                                navigate("/portal");
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }}
+                            disabled={isLoading}
+                            className="w-full bg-accent hover:bg-orange-500 text-white py-3 px-4 font-bold font-mono text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:scale-[1.02] active:scale-95 duration-150 shrink-0"
+                          >
+                            {isLoading ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : null}
+                            <span>Entrar como Portal Multirrol</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const u = {
+                                id: "superadmin_id",
+                                name: "Gerente General",
+                                email: "admin@serviport.local",
+                                role: "GERENTE_GENERAL",
+                                port: "GLOBAL"
+                              };
+                              localStorage.setItem("serviport_admin_session", JSON.stringify(u));
+                              navigate("/admin/dashboard");
+                            }}
+                            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 font-semibold font-mono text-[11px] uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700 hover:scale-[1.02] active:scale-95 duration-150 shrink-0"
+                          >
+                            <span>Entrar como Administrador de Puerto (TOS)</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             ) : (

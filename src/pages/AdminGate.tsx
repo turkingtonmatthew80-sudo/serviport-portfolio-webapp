@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, 
   doc, updateDoc, where, getDoc, setDoc
-} from "firebase/firestore";
+} from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
@@ -277,6 +277,22 @@ export function AdminGate() {
     try {
       const eirId = `EIR-IN-${Math.floor(100000 + Math.random() * 900000)}`;
       const cleanContainerId = container.trim().toUpperCase();
+
+      // Trigger SQL specific Gate-In for exportations if flowType is EXPORTACION_ENTREGA
+      if (flowType === "EXPORTACION_ENTREGA" && cleanContainerId) {
+         try {
+           const res = await fetch('/api/tos/gate-in-export', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ bic: cleanContainerId, bookingExportacionId: booking })
+           });
+           if (!res.ok) {
+             console.warn("SQL Gate-In endpoint failed or not fully integrated:", await res.text());
+           }
+         } catch(e) {
+           console.error("Failed to hit SQL gate-in", e);
+         }
+      }
 
       // 1. Log event details to firestore database
       const gateEventData: Omit<GateEvent, "id"> = {

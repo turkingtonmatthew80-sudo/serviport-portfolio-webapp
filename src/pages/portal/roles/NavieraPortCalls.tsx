@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Ship, Clock, CheckCircle } from "lucide-react";
 import { db } from "../../../lib/firebase";
-import { collection, query, getDocs } from "firebase/firestore";
+import { collection, query, getDocs } from "@/src/lib/db-wrapper";
 
 export function NavieraPortCalls() {
   const [portcalls, setPortcalls] = useState<any[]>([]);

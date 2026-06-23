@@ -12,44 +12,45 @@ import {
   Settings,
   DollarSign,
   Box,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "../lib/utils";
 
 const roleNavigation: Record<string, { name: string; path: string; icon: any }[]> = {
+  SUPERADMIN: [
+    { name: "Torre de Control", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Monitor Forense", path: "/admin/forensic", icon: Shield },
+    { name: "Ajustes Gemelo", path: "/admin/settings", icon: Settings },
+  ],
   GERENTE_GENERAL: [
-    { name: "Dashboard Global", path: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Terminal Financiero", path: "/admin/contador", icon: DollarSign },
-    { name: "Nómina Venezolana", path: "/admin/nomina", icon: Users },
-    { name: "Monitoreo Scraper", path: "/admin/scraper-panel", icon: Map },
-    { name: "Catálogo Buques", path: "/admin/catalogo-buques", icon: Ship },
-    { name: "Gestión Empleados", path: "/admin/empleados", icon: Users },
-    { name: "Documentos Legales", path: "/admin/documentos", icon: Box },
-    { name: "Configuración", path: "/admin/configuracion", icon: Settings },
+    { name: "Torre de Control", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Monitor Forense", path: "/admin/forensic", icon: Shield },
+    { name: "Ajustes Gemelo", path: "/admin/settings", icon: Settings },
   ],
   GERENTE_OPERACIONES: [
-    { name: "Dashboard Puerto", path: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Aprobaciones", path: "/admin/aprobaciones", icon: Shield },
-    { name: "Monitoreo TOS 2D", path: "/admin/monitoreo-tos", icon: Map },
-    { name: "Cuadrillas y Turnos", path: "/admin/cuadrillas", icon: Users },
-    { name: "Documentos Legales", path: "/admin/documentos", icon: Box },
-    { name: "Rendimiento y KPIs", path: "/admin/rendimiento", icon: TrendingUp },
+    { name: "Gemelo Digital (AIS)", path: "/admin/digital-twin", icon: Map },
+    { name: "Torre de Control", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Planificador de Atraque", path: "/admin/berth-planning", icon: Ship },
+    { name: "Contingencias (Perdones)", path: "/admin/contingencias", icon: AlertTriangle },
+    { name: "Regulador VBS", path: "/admin/vbs", icon: Truck },
   ],
   DESPACHADOR_BUQUES: [
     { name: "Atención Buques (Husbandry)", path: "/admin/buques", icon: Ship },
   ],
   OFICIAL_BUQUES: [
-    { name: "Control Operaciones (TOS)", path: "/admin/buques", icon: Ship },
-    { name: "Catálogo Buques Global", path: "/admin/catalogo-buques", icon: Ship },
-    { name: "Monitoreo TOS 2D", path: "/admin/monitoreo-tos", icon: Map },
+    { name: "Statement of Facts", path: "/admin/oficial-sof", icon: LayoutDashboard },
+    { name: "Tarja Digital", path: "/admin/oficial-tarja", icon: Box },
+    { name: "Rendimiento Grúas", path: "/admin/oficial-gruas", icon: TrendingUp },
   ],
   AGENTE_DOCUMENTACION: [
     { name: "Gestión Documental", path: "/admin/documentos", icon: Box },
     { name: "Catálogo Buques Global", path: "/admin/catalogo-buques", icon: Ship },
   ],
   PLANIFICADOR_PATIO: [
-    { name: "Planificador de Patio", path: "/admin/yard", icon: Map },
+    { name: "Command Center (TOS)", path: "/admin/yard-planner", icon: Map },
+    { name: "Cabinas Operadores (VDI)", path: "/admin/yard-vdi", icon: LayoutDashboard },
   ],
   INSPECTOR_PUERTA: [
     { name: "Control de Acceso (Gate)", path: "/admin/gate", icon: Truck },

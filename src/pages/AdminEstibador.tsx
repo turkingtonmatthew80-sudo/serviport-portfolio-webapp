@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   collection, getDocs, doc, updateDoc, query, where, orderBy, addDoc, 
   serverTimestamp, limit 
-} from "firebase/firestore";
+} from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { 
   CheckCircle2, Clock, Box, Play, Check, Users, Ship, Anchor, Loader2, 

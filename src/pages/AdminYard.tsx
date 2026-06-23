@@ -42,7 +42,7 @@ import {
   where,
   orderBy,
   setDoc,
-} from "firebase/firestore";
+} from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";

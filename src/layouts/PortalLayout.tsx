@@ -17,6 +17,10 @@ import {
   Truck,
   Menu,
   X,
+  AlertCircle,
+  PackageOpen,
+  Box,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useState, useEffect } from "react";
@@ -66,6 +70,21 @@ export function PortalLayout() {
           path: "/portal/naviera/dashboard",
           icon: LayoutDashboard,
         },
+        {
+          name: "Perfil Operativo (B2B)",
+          path: "/portal/naviera/perfil-operativo",
+          icon: Settings,
+        },
+        {
+          name: "Manifiestos de Carga",
+          path: "/portal/naviera/manifiestos",
+          icon: Package,
+        },
+        {
+          name: "Motor de Estiba",
+          path: "/portal/naviera/workbench-estiba",
+          icon: Anchor,
+        },
         { name: "Port Calls", path: "/portal/naviera/port-calls", icon: Ship },
         {
           name: "Proformas",
@@ -114,8 +133,13 @@ export function PortalLayout() {
           icon: Search,
         },
         {
-          name: "Retiros",
-          path: "/portal/importador/retiros",
+          name: "Finanzas y Pagos",
+          path: "/portal/importador/finanzas",
+          icon: FileText,
+        },
+        {
+          name: "Garantías y Vacíos",
+          path: "/portal/importador/garantias-vacios",
           icon: ArrowRightLeft,
         },
       ],
@@ -132,14 +156,19 @@ export function PortalLayout() {
           icon: LayoutDashboard,
         },
         {
-          name: "Ingreso Almacén",
+          name: "Documentos & VGM",
           path: "/portal/exportador/ingresos",
-          icon: ArrowRightLeft,
+          icon: FileText,
         },
         {
-          name: "Estatus Embarque",
+          name: "Embarques & Booking",
           path: "/portal/exportador/embarque",
           icon: Ship,
+        },
+        {
+          name: "Facturación Local",
+          path: "/portal/exportador/facturacion",
+          icon: FileText,
         },
       ],
     });
@@ -155,14 +184,24 @@ export function PortalLayout() {
           icon: LayoutDashboard,
         },
         {
-          name: "Consultas Operativas",
-          path: "/portal/aduana/consultas",
-          icon: FileSearch,
+          name: "Gestión de DUA / VUCE",
+          path: "/portal/aduana/expediente",
+          icon: FileText,
         },
         {
-          name: "Estatus Despacho",
-          path: "/portal/aduana/despachos",
+          name: "Reconocimiento Físico",
+          path: "/portal/aduana/aforo",
           icon: CheckCircle,
+        },
+        {
+          name: "Disputas y Reparos",
+          path: "/portal/aduana/reparos",
+          icon: AlertCircle,
+        },
+        {
+          name: "Pase de Salida",
+          path: "/portal/aduana/despachos",
+          icon: Truck,
         },
       ],
     });
@@ -178,12 +217,17 @@ export function PortalLayout() {
           icon: LayoutDashboard,
         },
         {
-          name: "Órdenes de Carga",
-          path: "/portal/transportista/ordenes",
+          name: "Flota y Personal",
+          path: "/portal/transportista/flota",
           icon: Truck,
         },
         {
-          name: "Mis EIRs",
+          name: "Agendar Cita VBS",
+          path: "/portal/transportista/vbs",
+          icon: Clock,
+        },
+        {
+          name: "EIR y Devoluciones",
           path: "/portal/transportista/eirs",
           icon: FileText,
         },
@@ -201,14 +245,19 @@ export function PortalLayout() {
           icon: LayoutDashboard,
         },
         {
-          name: "Máster B/L",
-          path: "/portal/consolidador/master",
-          icon: Ship,
+          name: "Consola Vaciado",
+          path: "/portal/consolidador/vaciado",
+          icon: PackageOpen,
         },
         {
-          name: "House B/L",
-          path: "/portal/consolidador/house",
-          icon: FileText,
+          name: "Desconsolidación MBL",
+          path: "/portal/consolidador/desconsolidacion",
+          icon: Box,
+        },
+        {
+          name: "Módulo Cúmplase",
+          path: "/portal/consolidador/liberacion",
+          icon: ShieldCheck,
         },
       ],
     });

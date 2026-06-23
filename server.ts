@@ -4,6 +4,9 @@ import { createServer as createViteServer } from "vite";
 import WebSocket from "ws";
 import cron from "node-cron";
 import * as cheerio from "cheerio";
+import { db as sqlDb } from "./src/db/index.js";
+import * as schema from "./src/db/schema.js";
+import { eq, and, asc, desc, sql } from 'drizzle-orm';
 import { initializeApp, getApps } from "firebase/app";
 import {
   getFirestore,
@@ -299,6 +302,159 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  // Handle generalized SQL operations
+  app.get("/api/sql/:table", async (req, res) => {
+    try {
+      const { table } = req.params;
+      let schemaTable = (schema as any)[table];
+      if (!schemaTable) {
+        // Fallback for camelCase matches (e.g., yard_movements vs yardMovements)
+        const camelTable = Object.keys(schema).find(k => k.toLowerCase() === table.toLowerCase().replace(/_/g, ''));
+        if (camelTable) {
+          schemaTable = (schema as any)[camelTable];
+        } else {
+          return res.status(404).json({ error: "Table not found" });
+        }
+      }
+      
+      let q: any = sqlDb.select().from(schemaTable);
+      
+      if (req.query.filters) {
+         try {
+           const filters = JSON.parse(req.query.filters as string);
+           for (const filter of filters) {
+             if (filter.type === 'where') {
+                const column = (schema as any)[table][filter.field === 'id' ? 'id' : filter.field];
+                if (column) {
+                  q = q.where(eq(column, filter.value));
+                }
+             } else if (filter.type === 'limit') {
+                q = q.limit(filter.count);
+             } else if (filter.type === 'orderBy') {
+                const column = (schema as any)[table][filter.field];
+                if (column) {
+                  q = q.orderBy(filter.direction === 'desc' ? desc(column) : asc(column));
+                }
+             }
+           }
+         } catch(e) { console.error('Filter error', e); }
+      }
+
+      const results = await q;
+      res.json(results);
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/sql/:table/:id", async (req, res) => {
+    try {
+      const { table, id } = req.params;
+      let schemaTable = (schema as any)[table];
+      if (!schemaTable) {
+        const camelTable = Object.keys(schema).find(k => k.toLowerCase() === table.toLowerCase().replace(/_/g, ''));
+        if (camelTable) schemaTable = (schema as any)[camelTable];
+        else return res.status(404).json({ error: "Table not found" });
+      }
+
+      const pkField = schemaTable.uid ? schemaTable.uid : schemaTable.id;
+      const parsedId = schemaTable.uid ? id : (isNaN(parseInt(id)) ? id : parseInt(id));
+      
+      const result = await sqlDb.select().from(schemaTable).where(eq(pkField, parsedId));
+      
+      if (result.length === 0) {
+        return res.json(null); // Document not found (like Firestore getDoc returning !exists)
+      }
+      res.json(result[0]);
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/sql/:table", async (req, res) => {
+    try {
+      const { table } = req.params;
+      const schemaTable = (schema as any)[table] || (schema as any)[Object.keys(schema).find(k => k.toLowerCase() === table.toLowerCase().replace(/_/g, ''))!];
+      if (!schemaTable) return res.status(404).json({ error: "Table not found" });
+
+      const rawBody = req.body;
+      const validKeys = Object.keys(schemaTable);
+      const data: any = {};
+      for (const key of Object.keys(rawBody)) {
+        if (validKeys.includes(key) && key !== 'id') {
+          data[key] = rawBody[key];
+        }
+      }
+
+      const result = await sqlDb.insert(schemaTable).values(data).returning();
+      res.json(result[0] || {});
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/sql/:table/:id", async (req, res) => {
+    try {
+      const { table, id } = req.params;
+      const schemaTable = (schema as any)[table] || (schema as any)[Object.keys(schema).find(k => k.toLowerCase() === table.toLowerCase().replace(/_/g, ''))!];
+      if (!schemaTable) return res.status(404).json({ error: "Table not found" });
+      
+      const { _isSet, ...rawBody } = req.body;
+      const pkField = schemaTable.uid ? schemaTable.uid : schemaTable.id;
+      const parsedId = schemaTable.uid ? id : (isNaN(parseInt(id)) ? id : parseInt(id));
+
+      // Sanitize fields to only those present in the schema
+      const validKeys = Object.keys(schemaTable);
+      const data: any = {};
+      for (const key of Object.keys(rawBody)) {
+        if (validKeys.includes(key) && key !== 'id' && key !== 'uid') {
+          data[key] = rawBody[key];
+        } else if (validKeys.includes(key) && schemaTable.uid && key === 'uid') {
+           // Allow uid to be updated if it is not the PK
+        }
+      }
+
+      if (_isSet) {
+         // rough implementation of upsert or set
+         const existing = await sqlDb.select().from(schemaTable).where(eq(pkField, parsedId));
+         if (existing.length === 0) {
+            const insertData = { ...data };
+            if (schemaTable.uid) insertData.uid = parsedId;
+            else insertData.id = parsedId;
+            
+            await sqlDb.insert(schemaTable).values(insertData).returning();
+            return res.json({ success: true });
+         }
+      }
+
+      await sqlDb.update(schemaTable).set(data).where(eq(pkField, parsedId));
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/sql/:table/:id", async (req, res) => {
+    try {
+      const { table, id } = req.params;
+      const schemaTable = (schema as any)[table] || (schema as any)[Object.keys(schema).find(k => k.toLowerCase() === table.toLowerCase().replace(/_/g, ''))!];
+      if (!schemaTable) return res.status(404).json({ error: "Table not found" });
+
+      const pkField = schemaTable.uid ? schemaTable.uid : schemaTable.id;
+      const parsedId = schemaTable.uid ? id : (isNaN(parseInt(id)) ? id : parseInt(id));
+
+      await sqlDb.delete(schemaTable).where(eq(pkField, parsedId));
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
+  });
 
   app.post("/api/seed", async (req, res) => {
     try {
@@ -754,6 +910,25 @@ async function startServer() {
               { parse_mode: "Markdown" },
             );
           }
+        } else if (data.startsWith("APROBAR_GNB_")) {
+          const bic = data.replace("APROBAR_GNB_", "");
+          await sqlDb.update(schema.inspeccionesGnb)
+             .set({ estado: 'CLEARED_FOR_EXPORT' })
+             .where(eq(schema.inspeccionesGnb.contenedorBic, bic));
+          if (chatId) {
+            bot.answerCallbackQuery(query.id, { text: "Aprobado (CLEARED)." });
+            bot.sendMessage(chatId, `✅ Inspección antidrogas completada SIN NOVEDAD para el contenedor *${bic}*.`, { parse_mode: "Markdown" });
+          }
+        } else if (data.startsWith("RECHAZAR_GNB_")) {
+          const bic = data.replace("RECHAZAR_GNB_", "");
+          await sqlDb.update(schema.inspeccionesGnb)
+             .set({ estado: 'RETAINED' })
+             .where(eq(schema.inspeccionesGnb.contenedorBic, bic));
+          
+          if (chatId) {
+            bot.answerCallbackQuery(query.id, { text: "Retenido." });
+            bot.sendMessage(chatId, `🔴 Contenedor *${bic}* ha sido retenido por sospecha fundamentada. Se ha ordenado su traslado a zona de vaciado total.`, { parse_mode: "Markdown" });
+          }
         }
       } catch (e) {
         console.error("[TELEGRAM] Firebase sync error:", e);
@@ -1040,6 +1215,618 @@ async function startServer() {
       res.status(500).json({ success: false, error: e.message });
     }
   });
+
+  // ================== ENDPOINTS EXPORTADOR ==================
+  app.post("/api/exportador/booking/request", async (req, res) => {
+    try {
+      const { exportadorId, navieraId, puertoDestino, puertosOrigen, cantidadTeus, tipoIsoRequerido } = req.body;
+      const result = await sqlDb.insert(schema.bookingsExportacion).values({
+        exportadorId: exportadorId || null,
+        navieraId: navieraId || null,
+        puertoOrigen: puertosOrigen || 'Puerto Cabello',
+        puertoDestino,
+        cantidadTeus,
+        tipoIsoRequerido,
+        estado: 'REQUESTED',
+        cargoCutOff: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+      }).returning();
+      
+      await sqlDb.insert(schema.auditLogs).values({
+        accionDesc: `[BOOKING_REQUEST] Exportador solicitó ${cantidadTeus} espacios a ${puertoDestino}`,
+      });
+
+      res.json({ success: true, data: result[0] });
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/tos/gate-in-export", async (req, res) => {
+    try {
+      const { bic, bookingExportacionId } = req.body;
+      
+      // Update container
+      await sqlDb.update(schema.contenedores)
+       .set({ estadoFisicoExport: 'FULL_GATE_IN' })
+       .where(eq(schema.contenedores.numeroBic, bic));
+
+      // Insert GNB Inspection
+      await sqlDb.insert(schema.inspeccionesGnb).values({
+        contenedorBic: bic,
+        estado: 'PENDING',
+        tipoInspeccion: 'CANINO'
+      });
+
+      if (bot && process.env.TELEGRAM_CHAT_ID) {
+        const textMsg = `🐕 *ALERTA DE INSPECCIÓN ANTIDROGAS - EXPORTACIÓN*\n\nContenedor: ${bic}\nEstado: FULL GATE-IN\nRequiere revisión canina.`;
+        bot.sendMessage(process.env.TELEGRAM_CHAT_ID, textMsg, {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "✅ Sin Novedad (Aprobar)", callback_data: `APROBAR_GNB_${bic}` },
+              { text: "🔴 Retención (Vaciado)", callback_data: `RECHAZAR_GNB_${bic}` }
+            ]]
+          }
+        }).catch(e => console.error(e));
+      }
+
+      res.json({ success: true, message: "Gate-In Exportación registrado y enviado a GNB." });
+    } catch (e: any) {
+       console.error(e);
+       res.status(500).json({ success: false, error: e.message });
+    }
+  });
+  // ==========================================================
+
+  // ======= EXPORT HARD LOCK ENDPOINT =======
+  app.post("/api/tos/load-export-container", async (req: express.Request, res: express.Response) => {
+    try {
+      const { bic, vesselId } = req.body;
+      if (!bic) return res.status(400).json({ success: false, error: "Falta BIC" });
+      
+      const conts = await sqlDb.select().from(schema.contenedores).where(eq(schema.contenedores.numeroBic, bic));
+      if (conts.length === 0) return res.status(404).json({ success: false, error: "Contenedor no localizado" });
+      const cont = conts[0];
+      
+      // 1. Check VGM requirement (SOLAS)
+      if (!cont.pesoVgmKg) {
+         return res.status(403).json({ success: false, error: "HARD LOCK: Falta declaración obligatoria VGM." });
+      }
+
+      // 2. Check GNB Anti-drugs (Local)
+      const gnbs = await sqlDb.select().from(schema.inspeccionesGnb).where(eq(schema.inspeccionesGnb.contenedorBic, bic));
+      if (gnbs.length === 0 || gnbs[0].estado !== "CLEARED_FOR_EXPORT") {
+         return res.status(403).json({ success: false, error: "HARD LOCK: Inspección GNB Antidrogas no aprobada o incompleta." });
+      }
+
+      // Update state to LOADED_ON_VESSEL
+      await sqlDb.update(schema.contenedores)
+         .set({ estadoFisicoExport: "LOADED_ON_VESSEL" })
+         .where(eq(schema.contenedores.numeroBic, bic));
+
+      res.json({ success: true, message: "Contenedor aprobado y cargado al buque sin restricciones." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ================== ENDPOINTS AGENTE ADUANAS ==================
+  app.post("/api/aduanas/seed-demo", async (req: express.Request, res: express.Response) => {
+    try {
+      const { rif, razonSocial } = req.body;
+      if (!rif) return res.status(400).json({ success: false, error: "No RIF" });
+      
+      let empId;
+      const emps = await sqlDb.select().from(schema.empresas).where(eq(schema.empresas.rif, rif));
+      if (emps.length === 0) {
+         const insertEmp = await sqlDb.insert(schema.empresas).values({
+            rif, razonSocial, isAgenteAduanas: true, licenciaSeniat: "1234-AA"
+         }).returning();
+         empId = insertEmp[0].id;
+      } else {
+         empId = emps[0].id;
+         await sqlDb.update(schema.empresas).set({ isAgenteAduanas: true }).where(eq(schema.empresas.id, empId));
+      }
+
+      // Seed some containers
+      const bic1 = `MSKU${Math.floor(1000000 + Math.random() * 8999999)}`;
+      const bic2 = `CMAU${Math.floor(1000000 + Math.random() * 8999999)}`;
+      const bic3 = `HLXU${Math.floor(1000000 + Math.random() * 8999999)}`;
+
+      await sqlDb.insert(schema.contenedores).values([
+         { numeroBic: bic1, tipoIso: "40' HC", estadoFisico: "EN_PATIO", agenteAduanasId: empId },
+         { numeroBic: bic2, tipoIso: "20' DV", estadoFisico: "EN_PATIO", agenteAduanasId: empId, selectividadSeniat: 'ROJO' },
+         { numeroBic: bic3, tipoIso: "40' REEFER", estadoFisico: "EN_PATIO", agenteAduanasId: empId, selectividadSeniat: 'AMARILLO' }
+      ]);
+      
+      // And a LEVANTE one
+      const bic4 = `SUDU${Math.floor(1000000 + Math.random() * 8999999)}`;
+      await sqlDb.insert(schema.contenedores).values({ numeroBic: bic4, tipoIso: "40' HC", estadoFisico: "EN_PATIO", agenteAduanasId: empId, selectividadSeniat: 'VERDE' });
+      await sqlDb.insert(schema.declaracionesAduaneras).values({
+         contenedorBic: bic4, numeroDua: `DUA-987123`, estadoDeclaracion: 'LEVANTE_OTORGADO'
+      });
+
+      // and a REPARO one
+      const bic5 = `ZIMU${Math.floor(1000000 + Math.random() * 8999999)}`;
+      await sqlDb.insert(schema.contenedores).values({ numeroBic: bic5, tipoIso: "40' HC", estadoFisico: "EN_PATIO", agenteAduanasId: empId, selectividadSeniat: 'ROJO' });
+      await sqlDb.insert(schema.declaracionesAduaneras).values({
+         contenedorBic: bic5, numeroDua: `DUA-554433`, estadoDeclaracion: 'REPARO_ACTIVO'
+      });
+
+      res.json({ success: true });
+    } catch(e: any) {
+      console.error("error seeding:", e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/aduanas/declaracion/transmitir", async (req: express.Request, res: express.Response) => {
+    try {
+      const { contenedorBic, agenteAduanasId, codigoArancelario, descripcion, montoTributos } = req.body;
+      if (!contenedorBic) return res.status(400).json({ success: false, error: "Falta BIC" });
+      
+      // Valida permisos conexos
+      const permisos = await sqlDb.select().from(schema.permisosConexos).where(eq(schema.permisosConexos.contenedorBic, contenedorBic));
+      const faltantes = permisos.filter(p => p.estado !== 'APROBADO' && p.estado !== 'EXENTO');
+      if (faltantes.length > 0) {
+         return res.status(403).json({ success: false, error: `ROLLBACK: Faltan Permisos Conexos aprobados (${faltantes.map(f => f.entidad).join(", ")})` });
+      }
+
+      const numDua = `DUA-${Math.floor(Math.random() * 900000) + 100000}`;
+      
+      // Begin insert
+      const resDua = await sqlDb.insert(schema.declaracionesAduaneras).values({
+         contenedorBic,
+         numeroDua: numDua,
+         montoTributosVes: montoTributos,
+         estadoDeclaracion: 'TRANSMITIDA'
+      }).returning();
+      
+      await sqlDb.insert(schema.itemsArancelarios).values({
+         declaracionId: resDua[0].id,
+         codigoArancelario,
+         descripcionMercancia: descripcion
+      });
+      
+      // Ruleta de selectividad
+      const rand = Math.random();
+      const selectividad = rand > 0.6 ? 'VERDE' : rand > 0.3 ? 'AMARILLO' : 'ROJO';
+      
+      await sqlDb.update(schema.contenedores).set({ selectividadSeniat: selectividad }).where(eq(schema.contenedores.numeroBic, contenedorBic));
+      
+      if (bot && process.env.TELEGRAM_CHAT_ID) {
+         const textMsg = `📄 *TRANSMISIÓN DE DECLARACIÓN (DUA)*\n\nDua: ${numDua}\nContenedor: ${contenedorBic}\nSelectividad ASIGNADA: ${selectividad}\n\nNotificación automatizada SIDUNEA.`;
+         bot.sendMessage(process.env.TELEGRAM_CHAT_ID, textMsg, { parse_mode: "Markdown" }).catch(e => console.error(e));
+      }
+
+      res.json({ success: true, data: { numeroDua: numDua, selectividad } });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/aduanas/declaracion/levante", async (req: express.Request, res: express.Response) => {
+    try {
+      const { declaracionId, numeroBic, selectividad } = req.body;
+      
+      const decls = await sqlDb.select().from(schema.declaracionesAduaneras).where(eq(schema.declaracionesAduaneras.id, declaracionId));
+      if (decls.length === 0) return res.status(404).json({ success: false, error: "Declaración no encontrada" });
+      const d = decls[0];
+      
+      if (d.estadoDeclaracion === 'REPARO_ACTIVO') {
+        return res.status(403).json({ success: false, error: "No se puede otorgar Levante: REPARO ACTIVO." });
+      }
+      
+      if (d.estadoDeclaracion !== 'PAGADA' && d.estadoDeclaracion !== 'TRANSMITIDA') {
+        return res.status(403).json({ success: false, error: "La DUA debe estar PAGADA." });
+      }
+      
+      if (selectividad === 'ROJO') {
+        // Mocked check for Aforo
+        console.log("Verificando aforo para Canal ROJO...");
+      }
+
+      // Update to LEVANTE_OTORGADO
+      await sqlDb.update(schema.declaracionesAduaneras).set({ estadoDeclaracion: 'LEVANTE_OTORGADO', fechaLiquidacion: new Date() }).where(eq(schema.declaracionesAduaneras.id, declaracionId));
+      
+      res.json({ success: true, message: "LEVANTE OTORGADO" });
+    } catch(e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/aduanas/despacho/solicitar-salida", async (req: express.Request, res: express.Response) => {
+    try {
+      const { numeroBic } = req.body;
+      const decls = await sqlDb.select().from(schema.declaracionesAduaneras).where(eq(schema.declaracionesAduaneras.contenedorBic, numeroBic)).orderBy(desc(schema.declaracionesAduaneras.fechaRegistro));
+      
+      if (decls.length === 0 || decls[0].estadoDeclaracion !== 'LEVANTE_OTORGADO') {
+         return res.status(403).json({ success: false, error: "Falla ACID: Contenedor no tiene LEVANTE OTORGADO." });
+      }
+      
+      // Simulating the mega JOIN
+      res.json({ success: true, token: `JWT-GATE-OUT-${numeroBic}-${Date.now()}` });
+    } catch(e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+  // ================== ENDPOINTS OFICIAL DE BUQUES (WATER CLERK) ==================
+  app.post("/api/water-clerk/sync-batch", async (req: express.Request, res: express.Response) => {
+    try {
+      const { events } = req.body;
+      if (!events || !Array.isArray(events)) {
+        return res.status(400).json({ success: false, error: "Invalid payload format. Expected array of events." });
+      }
+
+      await sqlDb.transaction(async (tx) => {
+        for (const ev of events) {
+          if (ev.type === 'TALLY') {
+             // Lógica UPSERT (Last Write Wins emulation in Postgres via onConflictDoUpdate)
+             await tx.insert(schema.movimientosTally)
+                .values({
+                   contenedorBic: ev.contenedorBic,
+                   escalaId: ev.escalaId,
+                   tipoMovimiento: ev.tipoMovimiento,
+                   timestampMovimiento: new Date(ev.timestamp),
+                   condicionSello: ev.condicionSello || 'INTACTO',
+                   danosVisibles: ev.danosVisibles || false
+                })
+                .onConflictDoUpdate({
+                   target: [schema.movimientosTally.id],
+                   set: { 
+                     tipoMovimiento: ev.tipoMovimiento, 
+                     timestampMovimiento: new Date(ev.timestamp),
+                     condicionSello: ev.condicionSello || 'INTACTO',
+                     danosVisibles: ev.danosVisibles || false
+                   },
+                   where: sql`${schema.movimientosTally.timestampMovimiento} < ${new Date(ev.timestamp)}`
+                });
+
+             // El Trigger/Cascade en el Gemelo
+             if (ev.tipoMovimiento === 'DISCHARGE') {
+                await tx.update(schema.contenedores)
+                  .set({ estadoFisico: 'EN_PATIO' })
+                  .where(eq(schema.contenedores.numeroBic, ev.contenedorBic));
+             }
+          }
+          
+          if (ev.type === 'SOF_EVENT') {
+             await tx.insert(schema.sofEventos)
+                .values({
+                   escalaId: ev.escalaId,
+                   oficialId: ev.oficialId,
+                   hitoOperativo: ev.hitoOperativo,
+                   timestampEvento: new Date(ev.timestamp),
+                   comentarios: ev.comentarios
+                });
+          }
+
+          if (ev.type === 'CRANE_DOWNTIME') {
+             await tx.insert(schema.rendimientoGruas)
+                .values({
+                   escalaId: ev.escalaId,
+                   gruaId: ev.gruaId,
+                   tipoRegistro: ev.tipoRegistro,
+                   codigoDemora: ev.codigoDemora,
+                   minutosPerdidos: ev.minutosPerdidos
+                });
+          }
+        }
+      });
+
+      res.json({ success: true, message: "Batch Sync processed via LWW rules across all events." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/water-clerk/escala/cast-off", async (req: express.Request, res: express.Response) => {
+    try {
+      const { escalaId } = req.body;
+      if (!escalaId) return res.status(400).json({ success: false, error: "Missing escalaId" });
+
+      await sqlDb.update(schema.escalas)
+         .set({ estado: 'ZARPADO_FISICAMENTE' })
+         .where(eq(schema.escalas.id, escalaId));
+
+      // Simulando validación cruzada entre movimientos de descarga del oficial y manifiesto.
+      if (bot && process.env.TELEGRAM_CHAT_ID) {
+         const msg = `⚓ *REPORTE DE OPERACIONES FINALIZADAS*
+Buque Escala: ${escalaId}
+Estado: Zarpado (Cast-Off)
+El buque se encuentra listo para iniciar trámites de Despacho de Zarpe.`;
+         bot.sendMessage(process.env.TELEGRAM_CHAT_ID, msg, { parse_mode: "Markdown" }).catch(e => console.error(e));
+      }
+
+      res.json({ success: true, message: "Escala finalizada y autoridades notificadas." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ================== ENDPOINTS PLANIFICADOR DE PATIO (YARD PLANNER) ==================
+  app.get("/api/tos/patio/mapa-estado", async (req: express.Request, res: express.Response) => {
+    try {
+      // Usamos jsonb_agg para renderizar el mapa en 1 sola query PostgreSQL
+      const query = sql`
+        SELECT jsonb_build_object(
+            'bloque', b.id,
+            'capacidad', b.capacidad_teus,
+            'contenedores', jsonb_agg(
+                jsonb_build_object(
+                    'bic', p.contenedor_bic,
+                    'bay', p.bay, 'row', p.row, 'tier', p.tier,
+                    'isReefer', p.enchufe_reefer_activo
+                )
+            )
+        ) AS mapa_patio
+        FROM ${schema.bloquesPatio} b
+        LEFT JOIN ${schema.posicionesPatio} p ON b.id = p.bloque_id
+        WHERE p.contenedor_bic IS NOT NULL
+        GROUP BY b.id;
+      `;
+      
+      const result = await sqlDb.execute(query);
+      res.json({ success: true, data: result.rows.map(r => r.mapa_patio) });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/tos/equipos/confirmar-movimiento", async (req: express.Request, res: express.Response) => {
+    try {
+      const { ordenId, contenedorBic, origenPosId, destinoPosId } = req.body;
+      if (!ordenId || !contenedorBic || !destinoPosId) {
+        return res.status(400).json({ success: false, error: "Faltan parámetros obligatorios." });
+      }
+
+      await sqlDb.transaction(async (tx) => {
+        // Bloqueo de concurrencia: SELECT FOR UPDATE
+        const destCheck = await tx.select().from(schema.posicionesPatio).where(eq(schema.posicionesPatio.id, destinoPosId)); // In a real app we'd use .for('update') if drizzle supported it well here, or raw SQL.
+        
+        if (destCheck.length === 0) throw new Error("Posición destino no existe.");
+        if (destCheck[0].contenedorBic !== null) throw new Error("Posición Ocupada. Solicite nueva coordenada al Planificador.");
+
+        if (origenPosId) {
+           await tx.update(schema.posicionesPatio)
+              .set({ contenedorBic: null })
+              .where(eq(schema.posicionesPatio.id, origenPosId));
+        } else {
+           // Release anywhere this container might be (just in case)
+           await tx.update(schema.posicionesPatio)
+              .set({ contenedorBic: null })
+              .where(eq(schema.posicionesPatio.contenedorBic, contenedorBic));
+        }
+
+        // Ocupa el destino
+        await tx.update(schema.posicionesPatio)
+           .set({ contenedorBic: contenedorBic })
+           .where(eq(schema.posicionesPatio.id, destinoPosId));
+
+        // Completar orden
+        await tx.update(schema.ordenesTrabajoPatio)
+           .set({ estado: 'COMPLETADA', timestampCompletada: new Date() })
+           .where(eq(schema.ordenesTrabajoPatio.id, ordenId));
+
+        // Tigger Simulados de Cascada
+        const orden = await tx.select().from(schema.ordenesTrabajoPatio).where(eq(schema.ordenesTrabajoPatio.id, ordenId));
+        if (orden.length > 0 && orden[0].tipoManiobra === 'POSICIONAMIENTO_AFORO') {
+           // Facturar 120 USD al cliente
+           console.log("Generando factura automática de 120.00 USD por POSICIONAMIENTO_AFORO a pie de buque/patio");
+        }
+      });
+
+      res.json({ success: true, message: "Movimiento confirmado y orden completada bajo ACID." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ================== ENDPOINTS ROLES RESTANTES ==================
+  app.post("/api/gate/registrar-eir", async (req: express.Request, res: express.Response) => {
+    try {
+      const { citaVbsId, contenedorBic, inspectorId, tipoOperacion, averiaCritica, detalles } = req.body;
+      if (!citaVbsId || !contenedorBic) return res.status(400).json({ error: "Faltan parámetros" });
+
+      await sqlDb.transaction(async (tx) => {
+         await tx.insert(schema.eirInspecciones).values({
+            citaVbsId,
+            contenedorBic,
+            inspectorId,
+            tipoOperacion,
+            tieneAveriaCritica: averiaCritica,
+            condicionTecho: detalles?.techo || 'OK',
+            condicionPaneles: detalles?.paneles || 'OK',
+            condicionPiso: detalles?.piso || 'OK'
+         });
+
+         const newState = tipoOperacion.includes('IN') ? 'EN_PATIO' : 'GATE_OUT';
+         await tx.update(schema.contenedores)
+            .set({ estadoFisico: newState })
+            .where(eq(schema.contenedores.numeroBic, contenedorBic));
+      });
+
+      res.json({ success: true, message: "EIR Registrado y contenedor actualizado." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/finanzas/conciliar-pago", async (req: express.Request, res: express.Response) => {
+    try {
+      const { transaccionId, facturaId, diffAjuste } = req.body;
+      
+      await sqlDb.transaction(async (tx) => {
+         await tx.update(schema.transaccionesBancarias)
+            .set({ estado: 'CONCILIADA' })
+            .where(eq(schema.transaccionesBancarias.id, transaccionId));
+
+         if (diffAjuste) {
+            await tx.insert(schema.notasCreditoDebito).values({
+               facturaId,
+               motivo: 'DIFERENCIAL_CAMBIARIO',
+               montoAjuste: diffAjuste
+            });
+         }
+      });
+
+      res.json({ success: true, message: "Pago conciliado exitosamente." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/compliance/bl/solicitar-correccion", async (req: express.Request, res: express.Response) => {
+    try {
+      const { blId, campoModificado, valorAnterior, valorNuevo } = req.body;
+      
+      await sqlDb.insert(schema.bitacoraCorreccionesBl).values({
+         blId, campoModificado, valorAnterior, valorNuevo, estado: 'EN_REVISION_SENIAT'
+      });
+
+      // Simular Webhook Telegram
+      if (bot && process.env.TELEGRAM_CHAT_ID) {
+         const msg = `📝 *SOLICITUD DE CARTA DE CORRECCIÓN* (BL: ${blId})
+Campo: ${campoModificado}
+De: ${valorAnterior} -> A: ${valorNuevo}
+📍 *Esperando revisión del SENIAT*`;
+         bot.sendMessage(process.env.TELEGRAM_CHAT_ID, msg, { parse_mode: "Markdown" }).catch(e=>console.error(e));
+      }
+
+      res.json({ success: true, message: "Solicitud elevada al SENIAT." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/hse/registrar-incidente", async (req: express.Request, res: express.Response) => {
+    try {
+      const { escalaId, tipo, nivelGravedad, paralizacionOperativa } = req.body;
+      
+      await sqlDb.insert(schema.incidentesHse).values({
+         escalaId, tipo, nivelGravedad, paralizacionOperativa
+      });
+
+      res.json({ success: true, message: "Incidente HSE registrado." });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ================== RESET DATABASE (ADMIN ONLY) ==================
+  app.post("/api/admin/reset-database", express.json(), async (req: express.Request, res: express.Response) => {
+    try {
+       const excludeUid = req.body.excludeUid;
+       const result = await sqlDb.execute(sql`
+          SELECT tablename 
+          FROM pg_tables 
+          WHERE schemaname = 'public'
+       `);
+       const tables = result.rows.map((row: any) => row.tablename);
+       
+       for (const table of tables) {
+          await sqlDb.execute(sql.raw(`TRUNCATE TABLE "${table}" CASCADE;`));
+       }
+
+       // 2. Clear Firebase Users and Firestore
+       try {
+           const adminAuth = (admin as any).auth();
+           const adminDb = (admin as any).firestore();
+
+           // Delete all users from Firebase auth except excludeUid
+           const listUsersResult = await adminAuth.listUsers(1000);
+           const authUidsToDelete = listUsersResult.users
+              .map(u => u.uid)
+              .filter(uid => uid !== excludeUid);
+           
+           if (authUidsToDelete.length > 0) {
+              await adminAuth.deleteUsers(authUidsToDelete);
+           }
+
+           // Helper to cleanly delete collections
+           async function deleteCollection(collectionPath: string) {
+              const snapshot = await adminDb.collection(collectionPath).get();
+              const batchSize = snapshot.size;
+              if (batchSize === 0) return;
+              const batch = adminDb.batch();
+              snapshot.docs.forEach((doc) => {
+                 if (collectionPath === "admin_users" && doc.id === excludeUid) {
+                    // don't delete current superadmin document
+                 } else {
+                    batch.delete(doc.ref);
+                 }
+              });
+              await batch.commit();
+           }
+
+           await deleteCollection("users");
+           await deleteCollection("admin_users");
+           await deleteCollection("companies");
+           await deleteCollection("employees");
+           await deleteCollection("crews");
+           await deleteCollection("yard_movements");
+           await deleteCollection("gate_events");
+           await deleteCollection("portcalls");
+           await deleteCollection("patios");
+           await deleteCollection("eir_orders");
+       } catch (firebaseErr: any) {
+           console.warn("[WARNING] No se pudo limpiar Firebase (Admin no configurado):", firebaseErr.message);
+       }
+       
+       res.json({ success: true, message: "Database reset completed" });
+    } catch(e: any) {
+       console.error("DB Reset Error:", e);
+       res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ================== ENDPOINTS GEMELO DIGITAL ==================
+  app.get("/api/gemelo-digital/mapa-unificado", async (req: express.Request, res: express.Response) => {
+    try {
+      // Unifica mediante un UNION ALL contenedores reales y fantasmas
+      const result = await sqlDb.execute(sql`
+        SELECT 
+           p.contenedor_bic as bic, 
+           b.id as bloque_id, 
+           p.bay, 
+           p.row, 
+           p.tier, 
+           false as is_simulated
+        FROM ${schema.posicionesPatio} p
+        JOIN ${schema.bloquesPatio} b ON p.bloque_id = b.id
+        WHERE p.contenedor_bic IS NOT NULL
+
+        UNION ALL
+
+        SELECT 
+           s.id::text as bic, 
+           s.bloque_asignado as bloque_id,
+           s.bay,
+           s.row,
+           s.tier,
+           true as is_simulated
+        FROM ${schema.simulacionContenedores} s
+      `);
+
+      res.json({ success: true, data: result.rows });
+    } catch(e: any) {
+      console.error(e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ==============================================================
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

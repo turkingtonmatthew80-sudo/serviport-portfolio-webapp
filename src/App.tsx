@@ -56,21 +56,30 @@ import { PortalIndexRoute } from "./pages/portal/PortalIndexRoute";
 import { NavieraDashboard } from "./pages/portal/roles/NavieraDashboard";
 import { NavieraPortCalls } from "./pages/portal/roles/NavieraPortCalls";
 import { NavieraProformas } from "./pages/portal/roles/NavieraProformas";
+import { NavieraPerfilOperativo } from "./pages/portal/roles/NavieraPerfilOperativo";
+import { NavieraManifiestos } from "./pages/portal/roles/NavieraManifiestos";
+import { NavieraWorkbenchEstiba } from "./pages/portal/roles/NavieraWorkbenchEstiba";
 import { ImportadorDashboard } from "./pages/portal/roles/ImportadorDashboard";
 import { ImportadorTracking } from "./pages/portal/roles/ImportadorTracking";
-import { ImportadorRetiros } from "./pages/portal/roles/ImportadorRetiros";
+import { ImportadorFinanzas } from "./pages/portal/roles/ImportadorFinanzas";
+import { ImportadorGarantias } from "./pages/portal/roles/ImportadorGarantias";
 import { ExportadorDashboard } from "./pages/portal/roles/ExportadorDashboard";
 import { ExportadorIngresos } from "./pages/portal/roles/ExportadorIngresos";
 import { ExportadorEmbarque } from "./pages/portal/roles/ExportadorEmbarque";
+import { ExportadorFacturacion } from "./pages/portal/roles/ExportadorFacturacion";
 import { AgenteAduanaDashboard } from "./pages/portal/roles/AgenteAduanaDashboard";
-import { AduanaConsultas } from "./pages/portal/roles/AduanaConsultas";
-import { AduanaDespachos } from "./pages/portal/roles/AduanaDespachos";
+import { AgenteAduanaExpediente } from "./pages/portal/roles/AgenteAduanaExpediente";
+import { AgenteAduanaAforo } from "./pages/portal/roles/AgenteAduanaAforo";
+import { AgenteAduanaReparos } from "./pages/portal/roles/AgenteAduanaReparos";
+import { AgenteAduanaDespachos } from "./pages/portal/roles/AgenteAduanaDespachos";
 import { TransportistaDashboard } from "./pages/portal/roles/TransportistaDashboard";
-import { TransportistaOrdenes } from "./pages/portal/roles/TransportistaOrdenes";
+import { TransportistaMiFlota } from "./pages/portal/roles/TransportistaMiFlota";
+import { TransportistaVbs } from "./pages/portal/roles/TransportistaVbs";
 import { TransportistaEirs } from "./pages/portal/roles/TransportistaEirs";
 import { ConsolidadorDashboard } from "./pages/portal/roles/ConsolidadorDashboard";
-import { ConsolidadorMaster } from "./pages/portal/roles/ConsolidadorMaster";
-import { ConsolidadorHouse } from "./pages/portal/roles/ConsolidadorHouse";
+import { ConsolidadorDesconsolidacion } from "./pages/portal/roles/ConsolidadorDesconsolidacion";
+import { ConsolidadorVaciado } from "./pages/portal/roles/ConsolidadorVaciado";
+import { ConsolidadorLiberacion } from "./pages/portal/roles/ConsolidadorLiberacion";
 import { ArmadorDashboard } from "./pages/portal/roles/ArmadorDashboard";
 import { ArmadorCuentas } from "./pages/portal/roles/ArmadorCuentas";
 import { ArmadorHusbandry } from "./pages/portal/roles/ArmadorHusbandry";
@@ -79,6 +88,31 @@ import { RoleGuard } from "./components/RoleGuard";
 import { SuscripcionPage } from "./pages/portal/SuscripcionPage";
 import { Directorio } from "./pages/Directorio";
 import { VesselDetail } from "./pages/VesselDetail";
+
+import { SuperadminDashboard } from "./pages/portal/roles/SuperadminDashboard";
+import { SuperadminForensic } from "./pages/portal/roles/SuperadminForensic";
+import { SuperadminSettings } from "./pages/portal/roles/SuperadminSettings";
+
+import { GerenteDashboard } from "./pages/portal/roles/GerenteDashboard";
+import { GerenteBerthPlanning } from "./pages/portal/roles/GerenteBerthPlanning";
+import { GerenteExcepciones } from "./pages/portal/roles/GerenteExcepciones";
+import { GerenteVbs } from "./pages/portal/roles/GerenteVbs";
+
+import { WaterClerkDashboard } from "./pages/portal/roles/WaterClerkDashboard";
+import { WaterClerkTally } from "./pages/portal/roles/WaterClerkTally";
+import { WaterClerkGruas } from "./pages/portal/roles/WaterClerkGruas";
+
+import { YardPlannerDashboard } from "./pages/portal/roles/YardPlannerDashboard";
+import { YardPlannerOperadorGrua } from "./pages/portal/roles/YardPlannerOperadorGrua";
+
+import { GateInspectorDashboard } from "./pages/portal/roles/GateInspectorDashboard";
+import { ConciliacionBancariaDashboard } from "./pages/portal/roles/ConciliacionBancariaDashboard";
+import { FDABuilderDashboard } from "./pages/portal/roles/FDABuilderDashboard";
+import { ComplianceDeskDashboard } from "./pages/portal/roles/ComplianceDeskDashboard";
+import { HusbandryBoardDashboard } from "./pages/portal/roles/HusbandryBoardDashboard";
+import { HSEAlertsDashboard } from "./pages/portal/roles/HSEAlertsDashboard";
+
+import { DigitalTwinDashboard } from "./pages/portal/roles/DigitalTwinDashboard";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
@@ -158,6 +192,51 @@ export default function App() {
                   <AdminDashboard />
                 </AdminRoleGuard>
              } />
+             <Route path="forensic" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL"]}>
+                   <SuperadminForensic />
+                </AdminRoleGuard>
+             } />
+             <Route path="settings" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_GENERAL"]}>
+                   <SuperadminSettings />
+                </AdminRoleGuard>
+             } />
+             <Route path="digital-twin" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
+                   <DigitalTwinDashboard />
+                </AdminRoleGuard>
+             } />
+             <Route path="berth-planning" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES"]}>
+                   <GerenteBerthPlanning />
+                </AdminRoleGuard>
+             } />
+             <Route path="contingencias" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES"]}>
+                   <GerenteExcepciones />
+                </AdminRoleGuard>
+             } />
+             <Route path="vbs" element={
+                <AdminRoleGuard allowedRoles={["GERENTE_OPERACIONES"]}>
+                   <GerenteVbs />
+                </AdminRoleGuard>
+             } />
+             <Route path="oficial-sof" element={
+                <AdminRoleGuard allowedRoles={["OFICIAL_BUQUES"]}>
+                   <WaterClerkDashboard />
+                </AdminRoleGuard>
+             } />
+             <Route path="oficial-tarja" element={
+                <AdminRoleGuard allowedRoles={["OFICIAL_BUQUES"]}>
+                   <WaterClerkTally />
+                </AdminRoleGuard>
+             } />
+             <Route path="oficial-gruas" element={
+                <AdminRoleGuard allowedRoles={["OFICIAL_BUQUES"]}>
+                   <WaterClerkGruas />
+                </AdminRoleGuard>
+             } />
              <Route path="empleados" element={
                 <AdminRoleGuard allowedRoles={["GERENTE_GENERAL"]}>
                   <AdminEmployees />
@@ -178,14 +257,24 @@ export default function App() {
                   <AdminYard />
                 </AdminRoleGuard>
              } />
+             <Route path="yard-planner" element={
+                <AdminRoleGuard allowedRoles={["PLANIFICADOR_PATIO", "GERENTE_OPERACIONES"]}>
+                  <YardPlannerDashboard />
+                </AdminRoleGuard>
+             } />
+             <Route path="yard-vdi" element={
+                <AdminRoleGuard allowedRoles={["PLANIFICADOR_PATIO"]}>
+                  <YardPlannerOperadorGrua />
+                </AdminRoleGuard>
+             } />
              <Route path="gate" element={
                 <AdminRoleGuard allowedRoles={["INSPECTOR_PUERTA", "GERENTE_OPERACIONES", "PLANIFICADOR_PATIO", "COORDINADOR_TRAFICO"]}>
-                  <AdminGate />
+                  <GateInspectorDashboard />
                 </AdminRoleGuard>
              } />
              <Route path="buques" element={
                 <AdminRoleGuard allowedRoles={["OFICIAL_BUQUES", "DESPACHADOR_BUQUES", "GERENTE_OPERACIONES"]}>
-                  <AdminBuques />
+                  <HusbandryBoardDashboard />
                 </AdminRoleGuard>
              } />
              <Route path="estibador" element={
@@ -210,7 +299,7 @@ export default function App() {
              } />
              <Route path="contador" element={
                 <AdminRoleGuard allowedRoles={["GERENTE_GENERAL", "CONTADOR"]}>
-                  <AdminContador />
+                  <ConciliacionBancariaDashboard />
                 </AdminRoleGuard>
              } />
              <Route path="nomina" element={
@@ -225,17 +314,17 @@ export default function App() {
              } />
              <Route path="da" element={
                 <AdminRoleGuard allowedRoles={["FACTURADOR", "GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
-                  <AdminDA />
+                  <FDABuilderDashboard />
                 </AdminRoleGuard>
              } />
              <Route path="documentos" element={
                 <AdminRoleGuard allowedRoles={["AGENTE_DOCUMENTACION", "GERENTE_OPERACIONES", "GERENTE_GENERAL", "OFICIAL_BUQUES"]}>
-                  <AdminDocumentos />
+                  <ComplianceDeskDashboard />
                 </AdminRoleGuard>
              } />
              <Route path="hse" element={
                 <AdminRoleGuard allowedRoles={["SUPERVISOR_HSE", "GERENTE_OPERACIONES", "GERENTE_GENERAL"]}>
-                  <AdminHSE />
+                  <HSEAlertsDashboard />
                 </AdminRoleGuard>
              } />
              <Route path="scraper-panel" element={
@@ -260,6 +349,30 @@ export default function App() {
               element={
                 <RoleGuard allowedRoles={["naviera"]}>
                   <NavieraDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="naviera/perfil-operativo"
+              element={
+                <RoleGuard allowedRoles={["naviera"]}>
+                  <NavieraPerfilOperativo />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="naviera/manifiestos"
+              element={
+                <RoleGuard allowedRoles={["naviera"]}>
+                  <NavieraManifiestos />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="naviera/workbench-estiba"
+              element={
+                <RoleGuard allowedRoles={["naviera"]}>
+                  <NavieraWorkbenchEstiba />
                 </RoleGuard>
               }
             />
@@ -298,10 +411,18 @@ export default function App() {
               }
             />
             <Route
-              path="importador/retiros"
+              path="importador/finanzas"
               element={
                 <RoleGuard allowedRoles={["importador"]}>
-                  <ImportadorRetiros />
+                  <ImportadorFinanzas />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="importador/garantias-vacios"
+              element={
+                <RoleGuard allowedRoles={["importador"]}>
+                  <ImportadorGarantias />
                 </RoleGuard>
               }
             />
@@ -331,6 +452,14 @@ export default function App() {
                 </RoleGuard>
               }
             />
+            <Route
+              path="exportador/facturacion"
+              element={
+                <RoleGuard allowedRoles={["exportador"]}>
+                  <ExportadorFacturacion />
+                </RoleGuard>
+              }
+            />
 
             {/* Agente de Aduana */}
             <Route
@@ -342,10 +471,26 @@ export default function App() {
               }
             />
             <Route
-              path="aduana/consultas"
+              path="aduana/expediente"
               element={
                 <RoleGuard allowedRoles={["agente_aduana"]}>
-                  <AduanaConsultas />
+                  <AgenteAduanaExpediente />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="aduana/aforo"
+              element={
+                <RoleGuard allowedRoles={["agente_aduana"]}>
+                  <AgenteAduanaAforo />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="aduana/reparos"
+              element={
+                <RoleGuard allowedRoles={["agente_aduana"]}>
+                  <AgenteAduanaReparos />
                 </RoleGuard>
               }
             />
@@ -353,7 +498,7 @@ export default function App() {
               path="aduana/despachos"
               element={
                 <RoleGuard allowedRoles={["agente_aduana"]}>
-                  <AduanaDespachos />
+                  <AgenteAduanaDespachos />
                 </RoleGuard>
               }
             />
@@ -368,10 +513,18 @@ export default function App() {
               }
             />
             <Route
-              path="transportista/ordenes"
+              path="transportista/flota"
               element={
                 <RoleGuard allowedRoles={["transportista"]}>
-                  <TransportistaOrdenes />
+                  <TransportistaMiFlota />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="transportista/vbs"
+              element={
+                <RoleGuard allowedRoles={["transportista"]}>
+                  <TransportistaVbs />
                 </RoleGuard>
               }
             />
@@ -394,18 +547,26 @@ export default function App() {
               }
             />
             <Route
-              path="consolidador/master"
+              path="consolidador/desconsolidacion"
               element={
                 <RoleGuard allowedRoles={["consolidador"]}>
-                  <ConsolidadorMaster />
+                  <ConsolidadorDesconsolidacion />
                 </RoleGuard>
               }
             />
             <Route
-              path="consolidador/house"
+              path="consolidador/vaciado"
               element={
                 <RoleGuard allowedRoles={["consolidador"]}>
-                  <ConsolidadorHouse />
+                  <ConsolidadorVaciado />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="consolidador/liberacion"
+              element={
+                <RoleGuard allowedRoles={["consolidador"]}>
+                  <ConsolidadorLiberacion />
                 </RoleGuard>
               }
             />

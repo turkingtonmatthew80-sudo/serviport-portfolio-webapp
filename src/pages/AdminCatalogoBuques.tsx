@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Ship, Search, Anchor, Filter, Info, Map } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { db } from "../lib/firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot } from "@/src/lib/db-wrapper";
 
 interface ScrapedVessel {
   id: string;

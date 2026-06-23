@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Truck, MapPin, Search, CalendarClock, ShieldCheck, User, Package, Filter, CheckCircle2, Factory, Clock } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { db } from "../lib/firebase";
-import { collection, query, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs, onSnapshot } from "@/src/lib/db-wrapper";
 
 interface TransportOrder {
   id: string;
@@ -158,50 +158,9 @@ export function AdminTrafico() {
         </div>
 
         <div className="space-y-6">
-           <div className="bg-[#0b1424] p-6 border border-slate-800 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                 <Truck size={100} className="text-primary" />
-              </div>
-              <h3 className="font-bold text-white font-mono tracking-widest text-sm mb-4 relative z-10">CITAS DISPONIBLES (HOY)</h3>
-              <div className="space-y-4 relative z-10">
-                 <div>
-                   <p className="text-xs text-slate-400 font-mono mb-1 flex items-center justify-between">14:00 - 15:00 <span>AGOTADO</span></p>
-                   <div className="w-full bg-slate-800 h-2 rounded"><div className="bg-red-500 h-2 rounded w-full"></div></div>
-                   <p className="text-[10px] text-slate-500 text-right mt-1 font-mono">0 cupos libres</p>
-                 </div>
-                 <div>
-                   <p className="text-xs text-slate-400 font-mono mb-1">15:00 - 16:00 (Ventana Tarde)</p>
-                   <div className="w-full bg-slate-800 h-2 rounded"><div className="bg-emerald-500 h-2 rounded w-1/4"></div></div>
-                   <p className="text-[10px] text-emerald-500 text-right mt-1 font-mono">15 cupos libres</p>
-                 </div>
-                 <div>
-                   <p className="text-xs text-slate-400 font-mono mb-1">16:00 - 17:00 (Ventana Tarde)</p>
-                   <div className="w-full bg-slate-800 h-2 rounded"><div className="bg-orange-500 h-2 rounded w-3/4"></div></div>
-                   <p className="text-[10px] text-orange-400 text-right mt-1 font-mono">3 cupos libres</p>
-                 </div>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-slate-800 relative z-10 font-sans text-xs text-slate-400">
-                 Las ventanas horarias son gestionadas por el Coordinador para evitar congestión en el pre-puerto (Garita).
-              </div>
-           </div>
-           
-           <div className="bg-white border border-slate-200 p-6 shadow-sm">
-               <h3 className="font-bold text-secondary font-mono tracking-widest text-xs mb-4 uppercase">Rendimiento Contratistas</h3>
-               <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                     <span className="text-xs font-bold text-slate-700">Transportes Lider C.A.</span>
-                     <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">ON TIME (94%)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-xs font-bold text-slate-700">Carga Pesada Vzla</span>
-                     <span className="text-[10px] font-mono text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">DELAYED (12%)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span className="text-xs font-bold text-slate-700">Logistica SUR</span>
-                     <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">ON TIME (98%)</span>
-                  </div>
-               </div>
+           {/* Se eliminaron los paneles de datos simulados */}
+           <div className="p-6 text-center border border-dashed border-slate-300 bg-white rounded text-slate-400 font-mono text-[10px] uppercase tracking-widest">
+              Estadísticas Detalladas en Desarrollo
            </div>
         </div>
       </div>

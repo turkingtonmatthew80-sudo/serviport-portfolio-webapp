@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { CheckCircle2, Clock, AlertTriangle, FileText, Check, X, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
-import { generateDisbursementAccountPDF } from "../lib/pdfGenerator";
 
 interface ApprovalRef {
   id: string;
@@ -90,61 +89,11 @@ export function AdminAprobaciones() {
     }
   };
 
-  const handleTelegramRequest = async (id: string, name: string) => {
-    try {
-      await fetch("/api/telegram-webhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "request_approval",
-          portCallId: id,
-          buque: name
-        })
-      });
-      alert(`Mensaje enviado al Bot de Telegram para el buque ${name}`);
-      await logAuditAction(`Envió solicitud a Telegram bot para ${id}`, adminUser?.role, adminUser?.email);
-    } catch (e) {
-      console.error(e);
-      alert("No se pudo conectar con el Bot de Telegram Local.");
-    }
-  };
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h2 className="text-3xl font-black text-secondary uppercase tracking-tight font-sansita">Aprobaciones Sensibles</h2>
         <p className="text-foreground-muted text-sm font-sans mt-1">Autorización y rechazo de operaciones críticas solicitadas por clientes B2B.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 border border-border rounded shadow-sm">
-          <div className="flex items-center gap-3 text-orange-600 mb-2">
-            <Clock size={20} />
-            <h3 className="font-bold text-sm uppercase tracking-widest font-mono">Pendientes</h3>
-          </div>
-          <p className="text-3xl font-black text-secondary">
-             {approvals.filter(a => a.status === "pending").length}
-             {approvals.length === 0 && !isLoading && <span className="text-[10px] text-orange-400 font-mono tracking-widest uppercase ml-2 select-none border border-orange-200 px-1 rounded">SIN DATOS REALES EN BDD</span>}
-          </p>
-        </div>
-        <div className="bg-white p-6 border border-border rounded shadow-sm">
-          <div className="flex items-center gap-3 text-emerald-600 mb-2">
-            <CheckCircle2 size={20} />
-            <h3 className="font-bold text-sm uppercase tracking-widest font-mono">Aprobadas (Hoy)</h3>
-          </div>
-          <p className="text-3xl font-black text-secondary">
-            {approvals.filter(a => a.status === "approved").length}
-            {approvals.length === 0 && !isLoading && <span className="text-[10px] text-emerald-400 font-mono tracking-widest uppercase ml-2 select-none border border-emerald-200 px-1 rounded">SIN DATOS REALES EN BDD</span>}
-          </p>
-        </div>
-        <div className="bg-white p-6 border border-border rounded shadow-sm">
-          <div className="flex items-center gap-3 text-red-600 mb-2">
-            <AlertTriangle size={20} />
-            <h3 className="font-bold text-sm uppercase tracking-widest font-mono">Alerta SLA</h3>
-          </div>
-          <p className="text-3xl font-black text-secondary">0</p>
-          <p className="text-xs text-foreground-muted mt-1">Rechazos o de mora mayor a 24h</p>
-        </div>
       </div>
 
       <div className="bg-white rounded border border-border shadow-sm overflow-hidden">
@@ -172,18 +121,6 @@ export function AdminAprobaciones() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 shrink-0 justify-end md:justify-start">
-                   <button 
-                      onClick={() => generateDisbursementAccountPDF({ vesselName: pc.name, port: pc.port || "Puerto Cabello", owner: "Naviera A", eta: pc.eta })}
-                      className="flex items-center gap-2 px-3 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm"
-                   >
-                      <FileText size={16} /> GENERAR DA (PDF)
-                   </button>
-                   <button 
-                      onClick={() => handleTelegramRequest(pc.id, pc.name)}
-                      className="flex items-center gap-2 px-3 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-secondary font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm"
-                   >
-                      BOT SENIAT
-                   </button>
                    <button onClick={() => handleReject(pc.id, true)} className="p-2 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors shadow-sm" title="Rechazar">
                       <X size={20} />
                    </button>
@@ -211,13 +148,10 @@ export function AdminAprobaciones() {
                 <div className="flex items-center gap-3 shrink-0">
                   {req.status === "pending" ? (
                     <>
-                      <button className="flex items-center gap-2 px-4 py-2 border border-border text-secondary hover:bg-slate-100 font-bold rounded text-xs uppercase tracking-widest transition-colors shadow-sm">
-                         <FileText size={16} /> Ver Detalles
-                      </button>
                       <button onClick={() => handleReject(req.id)} className="p-2 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors shadow-sm" title="Rechazar">
                          <X size={20} />
                       </button>
-                      <button onClick={() => handleApprove(req.id)} className="p-2 border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded transition-colors shadow-sm" title="Aprobar (Firma Digital)">
+                      <button onClick={() => handleApprove(req.id)} className="p-2 border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded transition-colors shadow-sm" title="Aprobar">
                          <Check size={20} />
                       </button>
                     </>
@@ -233,8 +167,7 @@ export function AdminAprobaciones() {
           ) : (
             <div className="p-12 text-center text-foreground-muted">
               <CheckCircle2 className="mx-auto h-12 w-12 text-slate-200 mb-3" />
-              <p className="font-mono uppercase tracking-widest text-xs font-bold">Sin datos reales</p>
-              <p className="text-sm mt-1">No se encontraron solicitudes en la base de datos.</p>
+              <p className="font-mono uppercase tracking-widest text-xs font-bold">Sin solicitudes pendientes</p>
             </div>
           )}
         </div>

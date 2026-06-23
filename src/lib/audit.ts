@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, updateDoc, arrayUnion } from "@/src/lib/db-wrapper";
 import { db } from "./firebase";
 
 export type AuditSeverity = "INFO" | "WARNING" | "CRITICAL" | "ERROR";

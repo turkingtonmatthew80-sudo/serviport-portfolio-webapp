@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, MailCheck, Bell, Newspaper, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 
 export function NewsletterPage() {

@@ -3,7 +3,7 @@ import { DollarSign, FileText, Send, CheckCircle, Clock, AlertTriangle } from "l
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { generateDisbursementAccountPDF } from "../lib/pdfGenerator";
 import { db } from "../lib/firebase";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs } from "@/src/lib/db-wrapper";
 
 export function AdminDA() {
   const { adminUser } = useAdminAuth();

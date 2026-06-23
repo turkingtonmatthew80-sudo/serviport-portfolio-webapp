@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DollarSign, Save, Loader2, List, Settings, Plus, Edit, Download } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc } from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";

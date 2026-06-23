@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   collection, getDocs, doc, updateDoc, query, arrayUnion, addDoc, 
   serverTimestamp, where, writeBatch
-} from "firebase/firestore";
+} from "@/src/lib/db-wrapper";
 import { db } from "../lib/firebase";
 import { logAuditAction } from "../lib/audit";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
@@ -513,7 +513,22 @@ export function AdminBuques() {
   const handleLoadContainerToVessel = async (c: ContainerItem, vessel: PortCall) => {
     setProcessingId(c.id);
     try {
-      // 1. Update Container Status
+      // 1. SQL Hard Lock Check for Export
+      if (c.operationType === "Carga") {
+         const res = await fetch("/api/tos/load-export-container", {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ bic: c.containerId, vesselId: vessel.id })
+         });
+         const data = await res.json();
+         if (!data.success && data.error && data.error.includes("HARD LOCK")) {
+            alert(data.error);
+            setProcessingId(null);
+            return;
+         }
+      }
+
+      // 2. Update Container Status
       await updateDoc(doc(db, "contenedores", c.id), {
         status: "Cargado",
         location: `BODEGA - ${vessel.name}`

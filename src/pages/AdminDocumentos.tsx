@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Box, FileText, Search, Download, Layers, ShieldCheck, ArrowRight, Truck, Database, Bot, RefreshCcw, CheckSquare, XCircle, Send } from "lucide-react";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { db } from "../lib/firebase";
-import { doc, onSnapshot, setDoc, serverTimestamp, collection, query, where, getDocs, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, serverTimestamp, collection, query, where, getDocs, getDoc } from "@/src/lib/db-wrapper";
 
 export function AdminDocumentos() {
   const { adminUser } = useAdminAuth();

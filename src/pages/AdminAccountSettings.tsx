@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "@/src/lib/db-wrapper";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import { Loader2, Save, User, Lock, Mail, Phone, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";

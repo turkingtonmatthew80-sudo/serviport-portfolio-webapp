@@ -1,185 +1,113 @@
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Package, Search, Map, LayoutDashboard } from "lucide-react";
-import { cn } from "../../../lib/utils";
+import { Search, Map, LayoutDashboard, Clock, AlertCircle, CheckCircle, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
-import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
 
 export function ImportadorDashboard() {
   const { user } = useAuth();
-  const [containers, setContainers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    
-    const q = query(
-      collection(db, "contenedores")
-    );
-    
-    // Wire up real-time listener
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as any),
-      }));
-      setContainers(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching containers:", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  const activeContainers = containers.filter(
-    (c) => c.status !== "Retirado",
-  ).length;
-  const readyToWithdraw = containers.filter(
-    (c) => c.status === "Disponible",
-  ).length;
-
-  const STATS = [
-    {
-      name: "Contenedores en AGD",
-      value: loading ? "-" : activeContainers.toString(),
-      icon: Package,
-      change: "Trazabilidad activa",
-    },
-    {
-      name: "Retiros Disponibles",
-      value: loading ? "-" : readyToWithdraw.toString(),
-      icon: LayoutDashboard,
-      change: "Listos para gate-out",
-    },
-  ];
-
+  
   return (
-    <div className="max-w-[1260px] mx-auto w-full animate-in fade-in duration-500">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">
-          Panel de Importador
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+           Panel de Importador (Consignatario)
         </h1>
-        <p className="text-foreground-muted mt-1">
-          Supervisa y gestiona la trazabilidad de tu carga en AGD.
+        <p className="text-muted-foreground mt-1 text-sm">
+           Torre de Control Financiera & Visibilidad Aduanera
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {STATS.map((stat) => (
-          <div
-            key={stat.name}
-            className="bg-background rounded-xl border border-border p-6 shadow-sm flex flex-col group hover:border-primary/50 transition-colors"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-sky-50 border-primary/10 text-primary flex items-center justify-center border">
-                <stat.icon size={24} />
-              </div>
-              <p className="text-sm font-semibold text-foreground-muted line-clamp-1">
-                {stat.name}
-              </p>
+      {/* Widget del Doble Reloj & Semaforo */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         {/* Doble Reloj */}
+         <div className="lg:col-span-2 bg-card border border-border rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+               <h2 className="font-bold text-lg flex items-center gap-2">
+                 <Clock className="text-primary w-5 h-5"/> Costos & Tiempo Libre (BL: MEDU1234567)
+               </h2>
+               <span className="text-xs font-semibold px-2.5 py-1 bg-muted rounded-full">3 Contenedores Activos</span>
             </div>
-            <div className="flex items-end justify-between mt-auto">
-              <span className="text-3xl font-black text-foreground tracking-tight">
-                {stat.value}
-              </span>
-              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-background-muted text-foreground-muted border border-border">
-                {stat.change}
-              </span>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               {/* Reloj Naviera (Demurrage) */}
+               <div className="flex flex-col items-center p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                  <h3 className="font-semibold text-sm mb-4 text-blue-800 dark:text-blue-300">Free Time Naviera (Demurrage)</h3>
+                  {/* Circular Progress Mockup */}
+                  <div className="relative w-32 h-32 flex items-center justify-center">
+                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-muted/30" strokeWidth="10" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-blue-500" strokeWidth="10" strokeDasharray="282.7" strokeDashoffset="80.7" strokeLinecap="round"/>
+                     </svg>
+                     <div className="absolute flex flex-col items-center">
+                        <span className="text-3xl font-black text-blue-600">5</span>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground">/ 7 Días</span>
+                     </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4 text-center">Faltan 2 días para recargo por demora del equipo.</p>
+               </div>
+
+               {/* Reloj Bolipuertos (Almacenaje) */}
+               <div className="flex flex-col items-center p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                  <h3 className="font-semibold text-sm mb-4 text-emerald-800 dark:text-emerald-300">Días Libres Puerto (Almacenaje)</h3>
+                  {/* Circular Progress Mockup */}
+                  <div className="relative w-32 h-32 flex items-center justify-center">
+                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-muted/30" strokeWidth="10" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-red-500" strokeWidth="10" strokeDasharray="282.7" strokeDashoffset="0" strokeLinecap="round"/>
+                     </svg>
+                     <div className="absolute flex flex-col items-center">
+                        <span className="text-3xl font-black text-red-600">6</span>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground">/ 5 Días</span>
+                     </div>
+                  </div>
+                  <p className="text-xs text-red-600 font-semibold mt-4 text-center text-balance flex items-center gap-1 justify-center">
+                     <AlertCircle className="w-3 h-3" /> Generando Almacenaje
+                  </p>
+               </div>
             </div>
-          </div>
-        ))}
+         </div>
+
+         {/* Semaforo de Selectividad */}
+         <div className="bg-card border border-border rounded-xl shadow-sm p-6 flex flex-col">
+            <h2 className="font-bold text-lg mb-6 flex items-center gap-2">
+              <ShieldCheck className="text-primary w-5 h-5"/> Selectividad SENIAT
+            </h2>
+            <div className="space-y-4 flex-1">
+               <div className="flex items-center gap-4 bg-muted/40 p-3 rounded-lg border border-border/50 opacity-50">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 border-2 border-green-500 flex items-center justify-center">
+                     <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  </div>
+                  <div>
+                     <p className="text-sm font-semibold">Canal Verde</p>
+                     <p className="text-xs text-muted-foreground">Levante Automático. (0 Conts)</p>
+                  </div>
+               </div>
+
+               <div className="flex items-center gap-4 bg-muted/40 p-3 rounded-lg border border-border/50 opacity-50">
+                  <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500 flex items-center justify-center">
+                     <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                  </div>
+                  <div>
+                     <p className="text-sm font-semibold">Canal Amarillo</p>
+                     <p className="text-xs text-muted-foreground">Revisión Documental (0 Conts)</p>
+                  </div>
+               </div>
+
+               <div className="flex items-center gap-4 bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-200 dark:border-red-900/30 ring-1 ring-red-500 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-2 h-full bg-red-500 animate-pulse"></div>
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 border-2 border-red-500 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+                     <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                  </div>
+                  <div>
+                     <p className="text-sm font-bold text-red-800 dark:text-red-400">Canal Rojo</p>
+                     <p className="text-xs text-red-700/80 dark:text-red-300/80">Aforo Físico Requerido (3 Conts)</p>
+                  </div>
+               </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4 italic text-center">Nota: Canal rojo genera cargos automáticos por movilización (Reach Stacker) en patio.</p>
+         </div>
       </div>
 
-      <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden h-full flex flex-col">
-        <div className="p-6 border-b border-border flex justify-between items-center bg-background-muted/50">
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <Map className="text-primary" size={20} />
-            Mis Contenedores en Almacén Documentado
-          </h2>
-          <Link to="/portal/importador/retiros" className="text-sm text-primary font-bold hover:underline hidden sm:block">
-            Ir a Retiros
-          </Link>
-        </div>
-        <div className="p-0 flex-1 flex flex-col">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-foreground-muted">
-              <thead className="bg-secondary text-xs uppercase font-bold text-white border-b border-secondary">
-                <tr>
-                  <th className="px-6 py-4 rounded-tl-sm">Contenedor</th>
-                  <th className="px-6 py-4">Tipo</th>
-                  <th className="px-6 py-4">Ubicación AGD</th>
-                  <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4 text-right rounded-tr-sm">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-8 text-center text-foreground-muted"
-                    >
-                      Cargando contenedores...
-                    </td>
-                  </tr>
-                ) : containers.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-8 text-center text-foreground-muted"
-                    >
-                      No hay contenedores registrados
-                    </td>
-                  </tr>
-                ) : (
-                  containers.map((row, i) => {
-                    let statusColor = "bg-gray-100 text-foreground-muted";
-                    if (row.status === "Disponible")
-                      statusColor = "bg-green-100 text-green-700";
-                    if (row.status === "Inspección")
-                      statusColor = "bg-yellow-100 text-yellow-700";
-                    if (row.status === "En Muelle")
-                      statusColor = "bg-primary/20 text-primary";
-
-                    return (
-                      <tr
-                        key={i}
-                        className="hover:bg-background-muted transition-colors"
-                      >
-                        <td className="px-6 py-4 font-mono font-bold text-foreground">
-                          {row.containerId || row.containerNumber || `CONT-${i+1}`}
-                        </td>
-                        <td className="px-6 py-4">{row.type || "40HC"}</td>
-                        <td className="px-6 py-4 font-mono text-xs">
-                          {row.location || "N/A"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={cn(
-                              "px-2.5 py-1 text-xs font-bold rounded-full",
-                              statusColor,
-                            )}
-                          >
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <Link to="/portal/importador/retiros" className="text-primary font-semibold hover:text-accent transition-colors">
-                            Solicitar Retiro
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+   </div>
   );
 }

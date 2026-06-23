@@ -20,7 +20,7 @@ import {
   where,
   getDocs,
   updateDoc,
-} from "firebase/firestore";
+} from "@/src/lib/db-wrapper";
 import { auth, db, handleFirestoreError, OperationType } from "../lib/firebase";
 
 export type RoleId =
@@ -51,6 +51,7 @@ interface AuthContextType {
   logout: () => void;
   deleteAccount: () => Promise<boolean>;
   isLoading: boolean;
+  loginAsDemo: (roles?: RoleId[]) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,6 +61,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Local Demo session check
+    const demoUserStr = localStorage.getItem("serviport_demo_user");
+    if (demoUserStr) {
+      try {
+        const demoUser = JSON.parse(demoUserStr);
+        setUser(demoUser);
+        setIsLoading(false);
+        return;
+      } catch (e) {
+        localStorage.removeItem("serviport_demo_user");
+      }
+    }
+
     const unsub = onAuthStateChanged(
       auth,
       async (firebaseUser: FirebaseUser | null) => {
@@ -87,8 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.warn(
                 "User document not found in Firestore. Strict security requires it.",
               );
-              // Do not aggressively sign out here, because the B2BRegisterPage Google autofill
-              // relies on the Firebase user session being active to create the document in step 3.
               setUser(null);
             }
           } catch (error: any) {
@@ -290,8 +302,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
+  const loginAsDemo = (roles: RoleId[] = ["naviera", "armador", "importador", "exportador", "agente_aduana", "transportista", "consolidador"]) => {
+    const demoUser = {
+      id: "demo-userid-mvp",
+      razonSocial: "SERVIPORT MULTI-B2B CO",
+      email: "demo@serviport.local",
+      rif: "J-12345678-9",
+      roles: roles,
+    };
+    localStorage.setItem("serviport_demo_user", JSON.stringify(demoUser));
+    setUser(demoUser);
+  };
+
   const logout = async () => {
     try {
+      localStorage.removeItem("serviport_demo_user");
       await signOut(auth);
     } catch (error) {
       console.error("Logout error", error);
@@ -340,6 +365,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         deleteAccount,
         isLoading,
+        loginAsDemo,
       }}
     >
       {children}
